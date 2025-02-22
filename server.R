@@ -12,7 +12,7 @@ library(shiny)
 # Define server logic required to draw a histogram
 function(input, output, session) {
 
-    # Training Period Selection
+    # Training Period
     
     # Data prep
     pca_data <- treasury_data %>% select(-date)
@@ -24,6 +24,7 @@ function(input, output, session) {
     pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
     PCs <- pca_result$rotation
     
+    # Today versus stressed curve
     output$yield_curve_plot <- renderPlot({
         #This is the interactivity
         shock_pc1 <- PCs[,1] * (input$parallel_shift / 100)
@@ -51,5 +52,9 @@ function(input, output, session) {
             scale_color_manual(values = c("Base Curve" = "blue", "Stressed Curve" = "red")) +
             theme_minimal()
     })
+    
+    # Distribution of PCA factor deltas
+    
+    
     
 }
