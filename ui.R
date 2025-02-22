@@ -11,23 +11,18 @@ library(shiny)
 
 # Define UI for application that draws a histogram
 fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins
+    titlePanel("Yield Curve Scenario Analysis"),
     sidebarLayout(
         sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
+            sliderInput("parallel_shift", "Parallel Shift (bps)",
+                        min = -200, max = 200, value = 0, step = 10),
+            sliderInput("steepening", "Steepening Factor",
+                        min = -1, max = 1, value = 0, step = 0.1),
+            sliderInput("curvature", "Curvature Factor",
+                        min = -1, max = 1, value = 0, step = 0.1)
         ),
-
-        # Show a plot of the generated distribution
         mainPanel(
-            plotOutput("distPlot")
+            plotOutput("yield_curve_plot")
         )
     )
 )
