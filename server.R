@@ -24,16 +24,21 @@ function(input, output, session) {
     pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
     PCs <- pca_result$rotation
     
+    pc_historical <- load_to_pc(yield_matrix_centered, PCs)
+    pc_deltas_historical <- deltas(pc_historical)
+    
     # Today versus stressed curve
     output$yield_curve_plot <- renderPlot({
         #This is the interactivity
-        shock_pc1 <- PCs[,1] * (input$parallel_shift / 100)
-        shock_pc2 <- PCs[,2] * input$steepening
-        shock_pc3 <- PCs[,3] * input$curvature
+        
+        pcs <- c((input$parallel_shift / 100), input$steepening, input$curvature)
+        pcs <- c(pcs, rep(0, ncol(PCs) - length(pcs)))
+        pcs <- t(as.matrix(pcs))
+        
+        stress <- unload_pc(pcs, PCs) %>% as.vector() %>% unlist()
         
         current_yield <- as.numeric(tail(pca_data, 1))
-        stressed_curve <- current_yield + shock_pc1 + shock_pc2 + shock_pc3
-        
+        stressed_curve <- current_yield + stress
         
         df <- data.frame(
             Term = colnames(pca_data),
