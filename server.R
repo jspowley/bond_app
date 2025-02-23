@@ -16,7 +16,7 @@ function(input, output, session) {
     
     # Data prep
     pca_data <- treasury_data %>% select(-date)
-    colnames(pca_data) <- paste0("T", 1:10)
+    colnames(pca_data) <- paste0("T", 1:maturities_included)
     yield_mean <- colMeans(pca_data)
     yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
     
@@ -58,7 +58,19 @@ function(input, output, session) {
             theme_minimal()
     })
     
-    # Distribution of PCA factor deltas
+    # Distribution of PCA factor deltas (Risk)
+    
+    pc_delta_plot <- pc_deltas_historical %>% 
+        mutate(temp = 1) %>% 
+        pivot_longer(cols = -temp) %>% 
+        mutate(name = factor(name, levels = paste0("PC", 1:maturities_included))) %>% 
+        select(-temp) %>% 
+        ggplot() + 
+        geom_histogram(aes(x = value, y = ..count../(sum(..count..)/maturities_included)), bins = 100) + 
+        facet_wrap(~name) +
+        labs(x = "Value", y = "Density")
+    
+    output$pc_risk_plot <- renderPlot(pc_delta_plot)
     
     
     

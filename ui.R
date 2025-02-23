@@ -14,7 +14,7 @@ fluidPage(
     titlePanel("Yield Curve Scenario Analysis"),
     sidebarLayout(
         sidebarPanel(
-            sliderInput("parallel_shift", "Parallel Shift (bps)",
+            sliderInput("parallel_shift", "Level Factor",
                         min = -200, max = 200, value = 0, step = 10),
             sliderInput("steepening", "Steepening Factor",
                         min = -1, max = 1, value = 0, step = 0.1),
@@ -22,7 +22,8 @@ fluidPage(
                         min = -1, max = 1, value = 0, step = 0.1)
         ),
         mainPanel(
-            plotOutput("yield_curve_plot")
+            plotOutput("yield_curve_plot"),
+            plotOutput("pc_risk_plot")
         )
     )
 )

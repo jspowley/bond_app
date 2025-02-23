@@ -1,6 +1,8 @@
 library(tidyverse)
 library(tidyquant)
 
+maturities_included <- 10
+
 # Getting Treasury Data
 tickers <- c("DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS3", "DGS5", "DGS7", "DGS10", "DGS20","DGS30")
 
