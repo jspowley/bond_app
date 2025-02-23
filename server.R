@@ -12,24 +12,39 @@ library(shiny)
 # Define server logic required to draw a histogram
 function(input, output, session) {
 
-    # Training Period
+# Input Rendering
+    
+    max_date <- max(treasury_data$date)
+    min_date <- min(treasury_data$date)
+    # Model Training Window
+    output$training_window_dates <- renderUI(sliderInput(inputId = "training_range", label = "Training Window (PCA and VAR):",
+                                                         value = c(min_date, max_date),
+                                                         min = min_date,
+                                                         max = max_date,
+                                                         width = "90%"))
     
     # Inputs for yield curve date
     output$yield_date_ui <- renderUI(dateInput("yield_date_selected", "Date of yield curve:",
-                                               value = max(treasury_data$date, 
-                                                           min = min(treasury_data$date),
-                                                           max = max(treasury_data$date))))
+                                               value = max_date, 
+                                                min = min_date,
+                                                max = max_date))
     
     # Resetting yield curve date to most recent
     observeEvent(input$max_yield_date, {
     output$yield_date_ui <- renderUI(dateInput("yield_date_selected", "Date of yield curve:",
-                                               value = max(treasury_data$date, 
-                                                           min = min(treasury_data$date),
-                                                           max = max(treasury_data$date))))
+                                               value = max_date, 
+                                               min = min_date,
+                                               max = max_date))
+    })
+    
+    # Data and Model Updates
+    observeEvent(c(input$yield_date_selected) ,{
+        
     })
     
     # Data prep
-    pca_data <- treasury_data %>% select(-date)
+    pca_data <- treasury_data %>% 
+        select(-date)
     colnames(pca_data) <- paste0("T", 1:maturities_included)
     yield_mean <- colMeans(pca_data)
     yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
@@ -55,15 +70,14 @@ function(input, output, session) {
         
         # Get's the current yield based on the last observable date prior or equal to the user selection:
         print(str(input$yield_date_selected))
-        current_yield <- as.numeric(treasury_data %>% filter(date <= input$yield_date_selected) %>% filter(date == max(date)) %>% select(-date))
+        current_yield <- treasury_data %>% filter(date <= input$yield_date_selected) %>% filter(date == max(date)) %>% select(-date)
+        stressed_curve <- as.numeric(current_yield) + stress
         
-        print(str(current_yield))
-        print(str(stress))
-        stressed_curve <- current_yield + stress
+        current_pca <- load_to_pc(current_yield, PCs)
         
         df <- data.frame(
             Term = colnames(pca_data),
-            Base = current_yield,
+            Base = as.numeric(current_yield),
             Stressed = stressed_curve
         )
         
@@ -93,6 +107,23 @@ function(input, output, session) {
     
     output$pc_risk_plot <- renderPlot(pc_delta_plot)
     
+    # Current Yield Curve PCA Weightings
     
+    current_pca_bar <- bind_cols(
+        t(current_pca),
+        t(pcs)
+    ) %>%
+        as.data.frame() %>% 
+        mutate(component = 1, component = cumsum(component)) %>% 
+        set_names(c("Current", "Scenario Delta", "PC #"))
+    
+    current_pca_bar %>% 
+        pivot_longer(cols = -`PC #`) %>% 
+        ggplot() +
+        geom_col(aes(x = `PC #`, y = value, fill = name)) +
+        labs(title = "Breakdown of Principle Components",
+             subtitle = "Current Yield Curve and Scenario",
+             x = "Principal Component",
+             y = "Value")
     
 }
