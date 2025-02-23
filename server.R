@@ -38,9 +38,7 @@ function(input, output, session) {
     })
     
     # Data and Model Updates
-    observeEvent(c(input$yield_date_selected) ,{
-        
-    })
+   
     
     # Data prep
     pca_data <- treasury_data %>% 
@@ -48,6 +46,15 @@ function(input, output, session) {
     colnames(pca_data) <- paste0("T", 1:maturities_included)
     yield_mean <- colMeans(pca_data)
     yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
+    
+    observeEvent(c(input$yield_date_selected) ,{
+        pca_data <- treasury_data %>% 
+            filter(date >= min(input$training_range) & date >= max(input$training_range)) %>% 
+            select(-date)
+        colnames(pca_data) <- paste0("T", 1:maturities_included)
+        yield_mean <- colMeans(pca_data)
+        yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
+    })
     
     # PCA Fitting
     pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
