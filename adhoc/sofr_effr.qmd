@@ -1,0 +1,21 @@
+---
+title: "Comparing Overnight Rates"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyquant)
+library(tidyverse)
+library(plotly)
+
+data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", from = "1990-01-01")
+
+plot <- data %>% 
+  ggplot() +
+  geom_line(aes(x = date, y = price, color = symbol))
+
+ggplotly(plot)
+
+
+```

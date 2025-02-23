@@ -7,7 +7,7 @@ maturities_included <- 10
 tickers <- c("DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS3", "DGS5", "DGS7", "DGS10", "DGS20","DGS30")
 
 # Moving forward, this should have a means of reconciling time periods with less benchmarks. Perhaps we should interpolate here as well to save on recalculation.
-treasury_data <- tq_get(tickers,
+treasury_data_api <- tq_get(tickers,
                         get = "economic.data",
                         from = "1992-01-01") %>% 
   # group_by(symbol) %>% 
@@ -17,7 +17,13 @@ treasury_data <- tq_get(tickers,
   arrange(date) %>% 
   drop_na()
 
-# Getting web scraped data (2 month etc.)
+treasury_data_scraped <- read_treasury()
+
+overnight_data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", from = "1990-01-01")
+
+treasury_data <- treasury_data_api
+  
+  # Getting web scraped data (2 month etc.)
 
 # Merging Datasets
 

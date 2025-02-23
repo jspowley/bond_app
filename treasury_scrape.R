@@ -22,9 +22,6 @@ get_table <- function(html_in, class_name = NA){
 
 scrape_selection <- c("1 Mo", "2 Mo", "3 Mo", "4 Mo", "1 Yr", "2 Yr", "3 Yr", "5 Yr", "7 Yr", "10 Yr", "20 Yr", "30 Yr")
 
-y <- 2025
-temp <- fetch_yield_page(y) %>% get_table("usa-table") %>% .[[1]] %>%  rvest::html_table()
-
 cleanup_tbl <- function(tbl, sel){
   tbl %>% 
     dplyr::select(dplyr::any_of(c("Date", sel))) %>% 
@@ -56,9 +53,21 @@ treasury_tables_range <- function(start, end){
   
 }
 
-update_all <- function(){
+update_all_treasury <- function(){
   output <- treasury_tables_range(1990, as.numeric(lubridate::year(Sys.Date())))
   last_update <- as.numeric(lubridate::year(Sys.Date()))
   saveRDS(output, "bin/treasury_cache.rds")
   saveRDS(last_update, "bin/last_treasury_update.rds")
+}
+
+read_treasury <- function(){
+  
+  master <- readRDS("bin/treasury_cache.rds")
+  year_of_update <- readRDS("bin/last_treasury_update.rds")
+  
+  out <- treasury_tables_range(year_of_update, as.numeric(lubridate::year(Sys.Date())))
+  output <- dplyr::bind_rows(master, out) %>% dplyr::distinct()
+  
+  return(output)
+  
 }
