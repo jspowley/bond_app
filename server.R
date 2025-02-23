@@ -14,6 +14,20 @@ function(input, output, session) {
 
     # Training Period
     
+    # Inputs for yield curve date
+    output$yield_date_ui <- renderUI(dateInput("yield_date_selected", "Date of yield curve:",
+                                               value = max(treasury_data$date, 
+                                                           min = min(treasury_data$date),
+                                                           max = max(treasury_data$date))))
+    
+    # Resetting yield curve date to most recent
+    observeEvent(input$max_yield_date, {
+    output$yield_date_ui <- renderUI(dateInput("yield_date_selected", "Date of yield curve:",
+                                               value = max(treasury_data$date, 
+                                                           min = min(treasury_data$date),
+                                                           max = max(treasury_data$date))))
+    })
+    
     # Data prep
     pca_data <- treasury_data %>% select(-date)
     colnames(pca_data) <- paste0("T", 1:maturities_included)
@@ -26,6 +40,8 @@ function(input, output, session) {
     
     pc_historical <- load_to_pc(yield_matrix_centered, PCs)
     pc_deltas_historical <- deltas(pc_historical)
+    # pct_deltas: Will provide some dampening with respect to high + low level, but won't gaurentee shifts to cause non_negative yields across the board.
+    pc_pct_deltas_historical <- deltas(pc_historical)
     
     # Today versus stressed curve
     output$yield_curve_plot <- renderPlot({
@@ -37,7 +53,12 @@ function(input, output, session) {
         
         stress <- unload_pc(pcs, PCs) %>% as.vector() %>% unlist()
         
-        current_yield <- as.numeric(tail(pca_data, 1))
+        # Get's the current yield based on the last observable date prior or equal to the user selection:
+        print(str(input$yield_date_selected))
+        current_yield <- as.numeric(treasury_data %>% filter(date <= input$yield_date_selected) %>% filter(date == max(date)) %>% select(-date))
+        
+        print(str(current_yield))
+        print(str(stress))
         stressed_curve <- current_yield + stress
         
         df <- data.frame(

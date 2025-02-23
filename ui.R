@@ -14,6 +14,10 @@ fluidPage(
     titlePanel("Yield Curve Scenario Analysis"),
     sidebarLayout(
         sidebarPanel(
+            
+            uiOutput("yield_date_ui"),
+            actionButton("max_yield_date", label = "Set Date to Most Recent"),
+            
             sliderInput("parallel_shift", "Level Factor",
                         min = -200, max = 200, value = 0, step = 10),
             sliderInput("steepening", "Steepening Factor",
@@ -23,7 +27,8 @@ fluidPage(
         ),
         mainPanel(
             plotOutput("yield_curve_plot"),
-            plotOutput("pc_risk_plot")
+            plotOutput("pc_risk_plot"),
+            plotOutput("pc_pct_risk_plot")
         )
     )
 )
