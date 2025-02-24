@@ -32,24 +32,39 @@ overnight_data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", fr
   select(date, value)
 
 overnight_yields <- overnight_data %>% 
-  dplyr::mutate(value = value/100,
-                value = ((((1+value/360)^360)^(1/2))-1)*2) %>% 
+  dplyr::mutate(value = value/100) %>% 
+                #value = ((((1+value/360)^360)^(1/2))-1)*2) %>% 
   dplyr::rename(`0 Mo` = value)
 
 api_names <- treasury_data_api %>% colnames()
 scraped_names <- treasury_data_scraped %>% colnames()
 ommissions <- scraped_names[!scraped_names %in% api_names]
 
-treasury_data_api %>% 
+treasury_data <- treasury_data_api %>% 
   dplyr::left_join(treasury_data_scraped %>% dplyr::select(dplyr::any_of(c("date",ommissions))), by = "date") %>% 
   dplyr::bind_rows(
     dplyr::anti_join(treasury_data_scraped, treasury_data_api, by = "date")
   ) %>% 
   left_join(overnight_yields, by = "date") %>% 
   arrange(date)
-
-treasury_data <- treasury_data_api
   
+# Tests for bias
+lm1 <- treasury_data %>% dplyr::select(`0 Mo`, `1 Mo`) %>% 
+  drop_na() %>% 
+  lm(formula = `0 Mo` ~ `1 Mo`)
+
+(over_under_sofr <- treasury_data %>% 
+  dplyr::mutate(diff1 = `0 Mo` - `1 Mo`) %>% 
+  dplyr::mutate(diff2 = `1 Mo` - `3 Mo`) %>% 
+  dplyr::select(date, diff1, diff2) %>% 
+  dplyr::rename(d_0Mo_1Mo = diff1, d_1Mo_3Mo = diff2) %>% 
+  tidyr::pivot_longer(cols = -date) %>% 
+  drop_na() %>% 
+  ggplot() +
+    geom_col(aes(x = date, y = value, color = name)) + 
+  facet_grid(name~.)
+  )
+
   # Getting web scraped data (2 month etc.)
 
 # Merging Datasets
