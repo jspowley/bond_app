@@ -53,7 +53,20 @@ lm1 <- treasury_data %>% dplyr::select(`0 Mo`, `1 Mo`) %>%
   drop_na() %>% 
   lm(formula = `0 Mo` ~ `1 Mo`)
 
-(over_under_sofr <- treasury_data %>% 
+# A simple way of removing SOFR risk premiums to bring it down to a lowest risk yield. 
+# More sophisticated methods might use swaps against the 3 month yield to determine how the credit risk premium has changed over time.
+# See 2008 spreads to understand that this is an imperfect solution (credit risk premium rose due to crisis and liquidity constraints, 
+# where the fed can money print and remains risk free)
+# Centering and unbiasing hopes to preserve some movement and structure without always leaning towards one direction or another. 
+# We use the error term to inform deviations.
+# That being said, interest rate risk is more weighted to the back of the curve, so if risk is overstated on the front half due to credit premium driven volatility, so be it,
+# The impacts will be minimal for what a bond portfolio manager would typically use.
+bias <- lm1 %>% broom::tidy() %>% .$estimate %>% .[1]
+co <- lm1 %>% broom::tidy() %>% .$estimate %>% .[2]
+
+treasury_data <- treasury_data %>% dplyr::mutate(`0 Mo` = `0 Mo`/co - bias)
+
+over_under_sofr <- treasury_data %>% 
   dplyr::mutate(diff1 = `0 Mo` - `1 Mo`) %>% 
   dplyr::mutate(diff2 = `1 Mo` - `3 Mo`) %>% 
   dplyr::select(date, diff1, diff2) %>% 
@@ -63,7 +76,17 @@ lm1 <- treasury_data %>% dplyr::select(`0 Mo`, `1 Mo`) %>%
   ggplot() +
     geom_col(aes(x = date, y = value, color = name)) + 
   facet_grid(name~.)
-  )
+
+# Filling in the blanks. Let's make sure PCA has everything it needs to run training back to 1990 if selected:
+
+treasury_data <- treasury_data %>% 
+  tidyr::pivot_longer(cols = -date) %>% 
+  dplyr::mutate(months = 
+                  case_when(stringr::str_detect(name, "Mo") ~ as.numeric(stringr::str_extract(name, "[0-9]+")),
+                            stringr::str_detect(name, "Yr") ~ as.numeric(stringr::str_extract(name, "[0-9]+"))*12,)) %>% 
+  drop_na()
+
+maturities <- treasury_data %>% dplyr::select(months) %>% dplyr::arrange(months) %>% dplyr::pull(months) %>%  unique()
 
   # Getting web scraped data (2 month etc.)
 
