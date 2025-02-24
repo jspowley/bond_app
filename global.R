@@ -1,7 +1,7 @@
 library(tidyverse)
 library(tidyquant)
 
-maturities_included <- 10
+# maturities_included <- 10
 
 # Getting Treasury Data
 tickers <- c("DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS3", "DGS5", "DGS7", "DGS10", "DGS20","DGS30")
@@ -129,8 +129,10 @@ treasury_data_int <- dplyr::anti_join(treasury_data, treasury_data_int, by = c("
   dplyr::ungroup() %>% 
   drop_na() %>% 
   dplyr::distinct() %>% 
-  dplyr::arrange(date, months)
+  dplyr::arrange(date, months) %>% 
+  dplyr::mutate(value = as.numeric(value))
 
+treasury_data <- treasury_data_int %>% tidyr::pivot_wider(names_from = months, values_from = value)
 # Merging Datasets
 
 # PCA Data Prep

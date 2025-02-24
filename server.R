@@ -16,6 +16,9 @@ function(input, output, session) {
     
     max_date <- max(treasury_data$date)
     min_date <- min(treasury_data$date)
+    maturities_included <- ncol(treasury_data) - 1
+    print(head(treasury_data))
+    print(str(treasury_data))
     # Model Training Window
     output$training_window_dates <- renderUI(sliderInput(inputId = "training_range", label = "Training Window (PCA and VAR):",
                                                          value = c(min_date, max_date),
@@ -62,14 +65,17 @@ function(input, output, session) {
     
     pc_historical <- load_to_pc(yield_matrix_centered, PCs)
     pc_deltas_historical <- deltas(pc_historical)
+    pc_deltas_sd <- pc_deltas_historical %>% 
+        dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
+    
     # pct_deltas: Will provide some dampening with respect to high + low level, but won't gaurentee shifts to cause non_negative yields across the board.
-    pc_pct_deltas_historical <- deltas(pc_historical)
+    # pc_pct_deltas_historical <- deltas(pc_historical)
     
     # Today versus stressed curve
     output$yield_curve_plot <- renderPlot({
         #This is the interactivity
         
-        pcs <- c((input$parallel_shift / 100), input$steepening, input$curvature)
+        pcs <- c(input$parallel_shift*pc_deltas_sd$PC1, input$steepening*pc_deltas_sd$PC2, input$curvature*pc_deltas_sd$PC3)
         pcs <- c(pcs, rep(0, ncol(PCs) - length(pcs)))
         pcs <- t(as.matrix(pcs))
         
@@ -116,21 +122,21 @@ function(input, output, session) {
     
     # Current Yield Curve PCA Weightings
     
-    current_pca_bar <- bind_cols(
-        t(current_pca),
-        t(pcs)
-    ) %>%
-        as.data.frame() %>% 
-        mutate(component = 1, component = cumsum(component)) %>% 
-        set_names(c("Current", "Scenario Delta", "PC #"))
+    #current_pca_bar <- bind_cols(
+    #    t(current_pca),
+    #    t(pcs)
+    #) %>%
+    #    as.data.frame() %>% 
+    #    mutate(component = 1, component = cumsum(component)) %>% 
+    #    set_names(c("Current", "Scenario Delta", "PC #"))
     
-    current_pca_bar %>% 
-        pivot_longer(cols = -`PC #`) %>% 
-        ggplot() +
-        geom_col(aes(x = `PC #`, y = value, fill = name)) +
-        labs(title = "Breakdown of Principle Components",
-             subtitle = "Current Yield Curve and Scenario",
-             x = "Principal Component",
-             y = "Value")
+    #current_pca_bar %>% 
+    #    pivot_longer(cols = -`PC #`) %>% 
+    #    ggplot() +
+    #    geom_col(aes(x = `PC #`, y = value, fill = name)) +
+    #    labs(title = "Breakdown of Principle Components",
+    #         subtitle = "Current Yield Curve and Scenario",
+    #         x = "Principal Component",
+    #         y = "Value")
     
 }
