@@ -22,9 +22,10 @@ treasury_data_api <- tq_get(tickers,
   arrange(date) %>% 
   drop_na()
   
-
+# We can get 2 mo, 4 mo and 2 y this way. More Data!
 treasury_data_scraped <- read_treasury() %>% dplyr::rename(date = Date)
 
+# Solving our anchoring issue for the front portion of the curve, somewhat.
 overnight_data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", from = "1990-01-01") %>% 
   pivot_wider(names_from = symbol, values_from = price) %>% 
   mutate(value = ifelse(is.na(SOFR), ifelse(is.na(EFFR), DFEDTAR, EFFR), SOFR)) %>% 
@@ -61,6 +62,7 @@ lm1 <- treasury_data %>% dplyr::select(`0 Mo`, `1 Mo`) %>%
 # We use the error term to inform deviations.
 # That being said, interest rate risk is more weighted to the back of the curve, so if risk is overstated on the front half due to credit premium driven volatility, so be it,
 # The impacts will be minimal for what a bond portfolio manager would typically use.
+# This is also what orthogonality is for from our PCA!!! Hopefully the disconnect get's pushed further back in the chain of variance explained.
 bias <- lm1 %>% broom::tidy() %>% .$estimate %>% .[1]
 co <- lm1 %>% broom::tidy() %>% .$estimate %>% .[2]
 
@@ -83,12 +85,47 @@ treasury_data <- treasury_data %>%
   tidyr::pivot_longer(cols = -date) %>% 
   dplyr::mutate(months = 
                   case_when(stringr::str_detect(name, "Mo") ~ as.numeric(stringr::str_extract(name, "[0-9]+")),
-                            stringr::str_detect(name, "Yr") ~ as.numeric(stringr::str_extract(name, "[0-9]+"))*12,)) %>% 
-  drop_na()
+                            stringr::str_detect(name, "Yr") ~ as.numeric(stringr::str_extract(name, "[0-9]+"))*12,))
 
 maturities <- treasury_data %>% dplyr::select(months) %>% dplyr::arrange(months) %>% dplyr::pull(months) %>%  unique()
 
-  # Getting web scraped data (2 month etc.)
+missing_vals <- treasury_data %>%
+  dplyr::filter(is.na(value)) %>% 
+  dplyr::group_by(date) %>% 
+  dplyr::summarise(missing = list(months), .groups = "keep") %>% 
+  dplyr::rowwise() %>% 
+  filter(length(missing) < 7) %>%  # Ensuring we have enough rate benchmarks, for example, SOFR only is a no go
+  dplyr::ungroup()
+  
+missing_vals <- dplyr::left_join(missing_vals, treasury_data, by = "date") %>% 
+  dplyr::group_by(date) %>% 
+  dplyr::summarise(
+    interpolation = list(fit_h_spline(
+      months,
+      value,
+      first(missing)
+    )),
+    .groups = "keep"
+  )
+
+missing_vals <- missing_vals %>% 
+  dplyr::rowwise()
+
+fill_missing <- function()
+
+treasury_data_int <- 
+  treasury_data %>% 
+  dplyr::select(value, months, date) %>% 
+  dplyr::arrange(months) %>% 
+  dplyr::rowwise() %>% 
+  dplyr::left_join(missing_vals, by = "date") %>% 
+  dplyr::mutate(value = dplyr::case_when(
+    is.na(value) ~ interpolation %>% dplyr::filter,
+    TRUE ~ value
+  ))
+  
+  tidyr::pivot_wider(names_from = months, values_from = value) %>% 
+  dplyr::arrange(date) %>% 
 
 # Merging Datasets
 
