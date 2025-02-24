@@ -108,24 +108,28 @@ missing_vals <- dplyr::left_join(missing_vals, treasury_data, by = "date") %>%
     .groups = "keep"
   )
 
-missing_vals <- missing_vals %>% 
-  dplyr::rowwise()
 
-fill_missing <- function()
 
 treasury_data_int <- 
   treasury_data %>% 
   dplyr::select(value, months, date) %>% 
   dplyr::arrange(months) %>% 
+  dplyr::filter(is.na(value)) %>% 
   dplyr::rowwise() %>% 
   dplyr::left_join(missing_vals, by = "date") %>% 
-  dplyr::mutate(value = dplyr::case_when(
-    is.na(value) ~ interpolation %>% dplyr::filter,
-    TRUE ~ value
-  ))
+  dplyr::filter(!is.null(interpolation)) %>% 
+  dplyr::mutate(value = list(interpolation[as.character(months)]) %>% unlist()) %>% 
+  dplyr::select(-interpolation)
   
-  tidyr::pivot_wider(names_from = months, values_from = value) %>% 
-  dplyr::arrange(date) %>% 
+# Merging in rowswhere all values provided
+
+treasury_data_int <- dplyr::anti_join(treasury_data, treasury_data_int, by = "date") %>% 
+  dplyr::select(date, months, value) %>% 
+  dplyr::bind_rows(treasury_data_int) %>% 
+  dplyr::ungroup() %>% 
+  drop_na() %>% 
+  dplyr::distinct() %>% 
+  dplyr::arrange(date)
 
 # Merging Datasets
 
