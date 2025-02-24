@@ -12,14 +12,41 @@ treasury_data_api <- tq_get(tickers,
                         from = "1992-01-01") %>% 
   # group_by(symbol) %>% 
   # mutate(price = (price - lag(price))) %>% 
-  pivot_wider(id_cols = date, names_from = symbol, values_from = price) %>% 
-  select(date, any_of(tickers)) %>% 
+  dplyr::filter(symbol %in% tickers) %>% 
+  dplyr::mutate(symbol = symbol %>% str_extract("[0-9]+MO|[0-9]+"),
+                symbol = dplyr::case_when(
+                  str_detect(symbol, pattern  = "MO") ~ paste0(str_extract(symbol, "[0-9]+"), " Mo"),
+                  TRUE ~ paste0(str_extract(symbol, pattern = "[0-9]+"), " Yr"))) %>% 
+  dplyr::mutate(price = price / 100) %>% 
+  pivot_wider(id_cols = date, names_from = symbol, values_from = price) %>%
   arrange(date) %>% 
   drop_na()
+  
 
-treasury_data_scraped <- read_treasury()
+treasury_data_scraped <- read_treasury() %>% dplyr::rename(date = Date)
 
-overnight_data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", from = "1990-01-01")
+overnight_data <- tq_get(c("EFFR", "SOFR", "DFEDTAR"), get = "economic.data", from = "1990-01-01") %>% 
+  pivot_wider(names_from = symbol, values_from = price) %>% 
+  mutate(value = ifelse(is.na(SOFR), ifelse(is.na(EFFR), DFEDTAR, EFFR), SOFR)) %>% 
+  arrange(date) %>% 
+  select(date, value)
+
+overnight_yields <- overnight_data %>% 
+  dplyr::mutate(value = value/100,
+                value = ((((1+value/360)^360)^(1/2))-1)*2) %>% 
+  dplyr::rename(`0 Mo` = value)
+
+api_names <- treasury_data_api %>% colnames()
+scraped_names <- treasury_data_scraped %>% colnames()
+ommissions <- scraped_names[!scraped_names %in% api_names]
+
+treasury_data_api %>% 
+  dplyr::left_join(treasury_data_scraped %>% dplyr::select(dplyr::any_of(c("date",ommissions))), by = "date") %>% 
+  dplyr::bind_rows(
+    dplyr::anti_join(treasury_data_scraped, treasury_data_api, by = "date")
+  ) %>% 
+  left_join(overnight_yields, by = "date") %>% 
+  arrange(date)
 
 treasury_data <- treasury_data_api
   
