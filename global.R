@@ -123,13 +123,13 @@ treasury_data_int <-
   
 # Merging in rowswhere all values provided
 
-treasury_data_int <- dplyr::anti_join(treasury_data, treasury_data_int, by = "date") %>% 
+treasury_data_int <- dplyr::anti_join(treasury_data, treasury_data_int, by = c("date", "months")) %>% 
   dplyr::select(date, months, value) %>% 
   dplyr::bind_rows(treasury_data_int) %>% 
   dplyr::ungroup() %>% 
   drop_na() %>% 
   dplyr::distinct() %>% 
-  dplyr::arrange(date)
+  dplyr::arrange(date, months)
 
 # Merging Datasets
 
