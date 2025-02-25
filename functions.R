@@ -35,7 +35,8 @@ deltas <- function(df_in){
   # returns all lags on all columns in a dataframe
   
   c_names <- df_in %>% colnames()
-  df_in %>% mutate(across(.cols = c_names, .fns = function(x){x-lag(x)})) %>% 
+  
+  df_in %>% mutate(across(.cols = dplyr::any_of(c_names), .fns = function(x){x-lag(x)})) %>% 
     tail(-1) %>% 
     return()
 }
@@ -44,7 +45,7 @@ pct_deltas <- function(df_in){
   # returns all lags on all columns in a dataframe
   
   c_names <- df_in %>% colnames()
-  df_in %>% mutate(across(.cols = c_names, .fns = function(x){(x-lag(x)})/lag(x))) %>% 
+  df_in %>% mutate(across(.cols = dplyr::any_of(c_names), .fns = function(x){(x-lag(x))/lag(x)})) %>% 
     tail(-1) %>% 
     return()
 }
@@ -57,3 +58,4 @@ fit_h_spline <- function(x, y, missing){
   names(output) <- out %>% dplyr::pull(missing)
   return(output)
 }
+

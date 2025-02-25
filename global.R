@@ -1,6 +1,8 @@
 library(tidyverse)
 library(tidyquant)
 
+source("treasury_scrape.R")
+source("functions.R")
 # maturities_included <- 10
 
 # Getting Treasury Data
@@ -136,6 +138,7 @@ treasury_data_server <- treasury_data_int %>% tidyr::pivot_wider(names_from = mo
 
 # Clearing memory for performance
 rm(treasury_data_int, treasury_data, missing_vals, treasury_data_api, treasury_data_scraped, overnight_yields, overnight_data)
+View(treasury_data_server)
 
 
 # From this point onward, data manipulation should be within "server". 
