@@ -138,7 +138,9 @@ treasury_data_server <- treasury_data_int %>% tidyr::pivot_wider(names_from = mo
 
 # Clearing memory for performance
 rm(treasury_data_int, treasury_data, missing_vals, treasury_data_api, treasury_data_scraped, overnight_yields, overnight_data)
-View(treasury_data_server)
+
+ui_date_max <- treasury_data_server$date %>% max()
+ui_date_min <- treasury_data_server$date %>% min()
 
 
 # From this point onward, data manipulation should be within "server". 

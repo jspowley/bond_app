@@ -20,8 +20,8 @@ bslib::page_navbar(
                  uiOutput("training_window_dates")),
             
             card(card_header("Yield"),
-            uiOutput("yield_date_ui"),
-            actionButton("max_yield_date", label = "Set Date to Most Recent")),
+            dateInput("selected_yield", "Select Yield Curve Date:", min = as.Date(ui_date_min), max = as.Date(ui_date_max)),
+            actionButton("max_date", "Reset to Most Recent")),
             
             card(card_header("Scenario, (Z Score)"),
             sliderInput("parallel_shift", "Level Factor",
