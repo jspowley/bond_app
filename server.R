@@ -90,12 +90,23 @@ function(input, output, session) {
         
         df$TermNum <- as.numeric(gsub("T", "", df$Term))
         
-        output$yield_curve_plot <- renderPlot({ggplot(df, aes(x = TermNum)) +
+        term_factor_levels <- df %>% 
+            dplyr::mutate(Term = as.numeric(Term)) %>% 
+            dplyr::arrange(Term) %>% 
+            dplyr::pull(Term) %>% 
+            unique() %>% 
+            as.character()
+        
+        print(term_factor_levels)
+        
+        df <- df %>% dplyr::mutate(Term = factor(as.character(Term), levels = term_factor_levels))
+        
+        output$yield_curve_plot <- renderPlot({ggplot(df, aes(x = Term)) +
                geom_line(aes(y = Base, color = "Base Curve"), size = 1, group = 1) +
-               geom_line(aes(y = Stressed, color = "Stressed Curve"), size = 1, group = 1) +
-               labs(title = "Yield Curve Stress Testing", x = "Term", y = "Yield (%)") +
-               scale_x_continuous(breaks = df$TermNum, labels = df$Term) +
-               scale_color_manual(values = c("Base Curve" = "blue", "Stressed Curve" = "red")) +
+               geom_line(aes(y = Stressed, color = "Stressed Curve"), size = 1, group = 1, linetype=3) +
+               labs(title = "Yield Curve Stress Testing", x = "Term (Months)", y = "Yield (%)") +
+               # scale_x_continuous(breaks = df$TermNum, labels = df$Term) +
+               scale_color_manual(values = c("Base Curve" = "black", "Stressed Curve" = "red")) +
                theme_minimal()})
     })
     
