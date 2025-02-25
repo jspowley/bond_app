@@ -56,7 +56,7 @@ function(input, output, session) {
         app_state$loaded <- TRUE
     })
     
-    observeEvent(c(input$selected_yield), {
+    observeEvent(list(input$selected_yield, app_state$loaded), {
         print(input$selected_yield)
     })
     
