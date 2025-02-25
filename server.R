@@ -37,27 +37,66 @@ function(input, output, session) {
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
     app_state <- shiny::reactiveValues()
     # Data and Model Updates
-    observeEvent(c(input$training_range),{
+    
+    pc_deltas_sd <- NULL
+    app_state$init <- NULL
+    
+    observeEvent(input$training_range,{
         print("Model Training")
         
-        pca_data <- treasury_data_server %>% 
+        pca_data <<- treasury_data_server %>% 
             filter(date >= min(input$training_range) & date <= max(input$training_range)) %>% 
             select(-date)
         yield_mean <- colMeans(pca_data)
         yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
         pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
-        PCs <- pca_result$rotation
+        PCs <<- pca_result$rotation
         
-        pc_historical <- load_to_pc(yield_matrix_centered, PCs)
-        pc_deltas_historical <- deltas(pc_historical)
-        pc_deltas_sd <- pc_deltas_historical %>% 
+        pc_historical <<- load_to_pc(yield_matrix_centered, PCs)
+        pc_deltas_historical <<- deltas(pc_historical)
+        pc_deltas_sd <<- pc_deltas_historical %>% 
             dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
         
-        app_state$loaded <- TRUE
+        if(is.null(app_state$init)){
+            app_state$init <- 0
+        }else{
+            app_state$init <- app_state$init + 1
+        }
+        
+        print("Done modelling")
     })
     
-    observeEvent(list(input$selected_yield, app_state$loaded), {
+    observeEvent(list(input$selected_yield, input$parallel_shift, input$steepening, input$curvature, app_state$init), {
+        print("Running Yield Curve Plot")
+        req(pc_deltas_sd)
         print(input$selected_yield)
+        
+        pcs <- c(input$parallel_shift*pc_deltas_sd$PC1, input$steepening*pc_deltas_sd$PC2, input$curvature*pc_deltas_sd$PC3)
+        pcs <- c(pcs, rep(0, ncol(PCs) - length(pcs)))
+        pcs <- t(as.matrix(pcs))
+        
+        stress <- unload_pc(pcs, PCs) %>% as.vector() %>% unlist()
+        current_yield <- treasury_data_server %>% filter(date <= input$selected_yield) %>% filter(date == max(date)) %>% select(-date)
+   
+        stressed_curve <- as.numeric(current_yield) + stress
+        # Where are PC levels currently, by current selected yield?
+        current_pca <- load_to_pc(current_yield, PCs)
+        
+        df <- data.frame(
+        Term = colnames(pca_data),
+        Base = as.numeric(current_yield),
+        Stressed = stressed_curve
+        )
+        
+        df$TermNum <- as.numeric(gsub("T", "", df$Term))
+        
+        output$yield_curve_plot <- renderPlot({ggplot(df, aes(x = TermNum)) +
+               geom_line(aes(y = Base, color = "Base Curve"), size = 1, group = 1) +
+               geom_line(aes(y = Stressed, color = "Stressed Curve"), size = 1, group = 1) +
+               labs(title = "Yield Curve Stress Testing", x = "Term", y = "Yield (%)") +
+               scale_x_continuous(breaks = df$TermNum, labels = df$Term) +
+               scale_color_manual(values = c("Base Curve" = "blue", "Stressed Curve" = "red")) +
+               theme_minimal()})
     })
     
     #                   
