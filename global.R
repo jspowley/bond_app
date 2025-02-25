@@ -132,11 +132,10 @@ treasury_data_int <- dplyr::anti_join(treasury_data, treasury_data_int, by = c("
   dplyr::arrange(date, months) %>% 
   dplyr::mutate(value = as.numeric(value))
 
-treasury_data <- treasury_data_int %>% tidyr::pivot_wider(names_from = months, values_from = value)
-# Merging Datasets
+treasury_data_server <- treasury_data_int %>% tidyr::pivot_wider(names_from = months, values_from = value)
 
-# PCA Data Prep
-
+# Clearing memory for performance
+rm(treasury_data_int, treasury_data, missing_vals, treasury_data_api, treasury_data_scraped, overnight_yields, overnight_data)
 
 
 # From this point onward, data manipulation should be within "server". 

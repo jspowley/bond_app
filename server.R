@@ -14,11 +14,12 @@ function(input, output, session) {
 
 # Input Rendering
     
-    max_date <- max(treasury_data$date)
-    min_date <- min(treasury_data$date)
-    maturities_included <- ncol(treasury_data) - 1
+    max_date <- max(treasury_data_server$date)
+    min_date <- min(treasury_data_server$date)
+    maturities_included <- ncol(treasury_data_server) - 1
     print(head(treasury_data))
     print(str(treasury_data))
+    
     # Model Training Window
     output$training_window_dates <- renderUI(sliderInput(inputId = "training_range", label = "Training Window (PCA and VAR):",
                                                          value = c(min_date, max_date),
@@ -41,7 +42,9 @@ function(input, output, session) {
     })
     
     # Data and Model Updates
-   
+    observeEvent(c(),{
+        treasury_data_server
+    })
     
     # Data prep
     pca_data <- treasury_data %>% 
