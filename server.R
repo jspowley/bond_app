@@ -14,8 +14,6 @@ function(input, output, session) {
 
 # Input Rendering
     
-    loaded <- FALSE
-    
     max_date <- max(treasury_data_server$date)
     min_date <- min(treasury_data_server$date)
     maturities_included <- ncol(treasury_data_server) - 1
@@ -37,6 +35,7 @@ function(input, output, session) {
     #})
     
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
+    app_state <- shiny::reactiveValues()
     # Data and Model Updates
     observeEvent(c(input$training_range),{
         print("Model Training")
@@ -54,22 +53,11 @@ function(input, output, session) {
         pc_deltas_sd <- pc_deltas_historical %>% 
             dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
         
-        loaded <- TRUE
+        app_state$loaded <- TRUE
     })
     
-    observeEvent(c(input$selected_yield,
-                   input$parallel_shift,
-                   input$steepening,
-                   input$curvature,
-                   loaded),{
-                       
-                       req(input$selected_yield)
-                       
-                       print("It worked")
-                       print(input$selected_yield)
-
-        
-        
+    observeEvent(c(input$selected_yield), {
+        print(input$selected_yield)
     })
     
     #                   

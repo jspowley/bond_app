@@ -142,6 +142,8 @@ rm(treasury_data_int, treasury_data, missing_vals, treasury_data_api, treasury_d
 ui_date_max <- treasury_data_server$date %>% max()
 ui_date_min <- treasury_data_server$date %>% min()
 
+print("global done")
+
 
 # From this point onward, data manipulation should be within "server". 
 # This will allow for more selective time periods for model training etc.
