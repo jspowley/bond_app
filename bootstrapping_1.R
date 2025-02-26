@@ -145,7 +145,9 @@ for(i in 0:5){
       dtm <- dtm_r1$days_in - dtm_r1$days_through
       dtm <- dtm + (pre %>% dplyr::slice(-1) %>% dplyr::pull(days_in) %>% sum()) + target$days_in
       
-      pri <- pri - (pre %>% dplyr::mutate(pv_removed = dcf * yie) %>% dplyr::pull(pv_removed) %>% sum())
+      pv_rem <- pre %>% dplyr::mutate(pv_removed = dcf * (yie/2)*100) %>% dplyr::pull(pv_removed) %>% sum()
+      print(pv_rem)
+      pri <- pri - pv_rem
       
     }else{
       dtm <- target$days_in - target$days_through
