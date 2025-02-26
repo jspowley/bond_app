@@ -146,7 +146,7 @@ for(i in 0:5){
       dtm <- dtm + (pre %>% dplyr::slice(-1) %>% dplyr::pull(days_in) %>% sum()) + target$days_in
       
       pv_rem <- pre %>% dplyr::mutate(pv_removed = dcf * (yie/2)*100) %>% dplyr::pull(pv_removed) %>% sum()
-      print(pv_rem)
+      # print(pv_rem)
       pri <- pri - pv_rem
       
     }else{
@@ -172,17 +172,17 @@ return(output)
 
 }
 
-yield_curve %>% 
-  data.frame(term = as.numeric(names(.)), yield = .) %>%
-  ai_from_df() %>% 
-  dplyr::mutate(bs_group = term %% 6) %>% 
-  dplyr::arrange(term) %>% 
-  dplyr::group_by(bs_group) %>% 
-  dplyr::mutate(price = 100 + (100*yield/2) * ai,
-                final_t = ceiling(term/2),
-                dcf = NA) %>% View()
+#yield_curve %>% 
+#  data.frame(term = as.numeric(names(.)), yield = .) %>%
+#  ai_from_df() %>% 
+#  dplyr::mutate(bs_group = term %% 6) %>% 
+#  dplyr::arrange(term) %>% 
+#  dplyr::group_by(bs_group) %>% 
+#  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+#                final_t = ceiling(term/2),
+#                dcf = NA) %>% View()
 
-yield_curve %>% 
-  data.frame(term = as.numeric(names(.)), yield = .) %>%
-  ai_from_df() %>% 
-  bootstrap_1() %>% View()
+#yield_curve %>% 
+#  data.frame(term = as.numeric(names(.)), yield = .) %>%
+#  ai_from_df() %>% 
+#  bootstrap_1() %>% View()

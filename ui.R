@@ -34,6 +34,7 @@ bslib::page_navbar(
         ),
             plotOutput("yield_curve_plot"),
             plotOutput("pc_risk_plot"),
-            plotOutput("pc_pct_risk_plot")
+            plotOutput("pc_pct_risk_plot"),
+            DT::DTOutput("boot_dt")
         )
     )
