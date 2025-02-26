@@ -113,7 +113,7 @@ bootstrap_1 <- function(df_in){
   dplyr::group_by(bs_group) %>% 
   dplyr::mutate(price = 100 + (100*yield/2) * ai,
                 final_t = ceiling(term/2),
-                dcf = NA)
+                dcf = NA, dtm = NA)
 
 
 
@@ -141,16 +141,11 @@ for(i in 0:5){
     if(r > 1){
       
       pre <- b %>% dplyr::slice(1:(r-1))
-      dtm_r1 <- pre %>% dplyr::slice(1)
-      dtm <- dtm_r1$days_in - dtm_r1$days_through
-      dtm <- dtm + (pre %>% dplyr::slice(-1) %>% dplyr::pull(days_in) %>% sum()) + target$days_in
       
       pv_rem <- pre %>% dplyr::mutate(pv_removed = dcf * (yie/2)*100) %>% dplyr::pull(pv_removed) %>% sum()
       # print(pv_rem)
       pri <- pri - pv_rem
       
-    }else{
-      dtm <- target$days_in - target$days_through
     }
     
     #print("write")
@@ -158,6 +153,7 @@ for(i in 0:5){
     dcf_out <- pri/((target$yield/2)*100 + 100)
     #print(dcf_out)
     b[r,"dcf"] <- dcf_out
+    
     #print("written")
   }
   
