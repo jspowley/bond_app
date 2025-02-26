@@ -63,9 +63,10 @@ yield_bench %>%
   dplyr::rowwise() %>% 
   dplyr::mutate(ai = ai_fraction(date_current, term))
 
-
-yield_bench %>% 
-  # dplyr::rowwise() %>% 
+  
+ai_from_df <- function(df_in){  
+  
+  df_in %>% 
   dplyr::mutate(
     date_in = date_current,
     y = as.numeric(lubridate::year(date_in)),
@@ -96,4 +97,13 @@ yield_bench %>%
     days_in = as.numeric(date_2 - date_1),
     days_through = as.numeric(date_in - date_1),
     ai = days_through / days_in
-  )
+  ) %>% return()
+}
+
+yield_curve %>% 
+  data.frame(term = as.numeric(names(.)), yield = .) %>% 
+  ai_from_df() %>% 
+  dplyr::mutate(bs_group = term %% 6) %>% 
+  dplyr::arrange(term) %>% 
+  dplyr::group_by(bs_group) %>% 
+  dplyr::mutate(price = 100 + (100*yield/2) * ai)

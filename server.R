@@ -113,6 +113,9 @@ function(input, output, session) {
         h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
         # saveRDS(h_spline, "yield_curve.rds")
         
+        h_spline %>% 
+            data.frame(term = as.numeric(names(.)), yield = .) %>% 
+            ai_from_df()
         
     })
     
