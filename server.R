@@ -30,9 +30,9 @@ function(input, output, session) {
                                                          max = max_date,
                                                          width = "90%"))
     
-    #observeEvent(input$max_date, {
-    #    updateDateInput(session, "selected_yield", value = as.Date(max_date))
-    #})
+    observeEvent(input$max_date, {
+        updateDateInput(session, "selected_yield", value = as.Date(max_date))
+    })
     
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
     app_state <- shiny::reactiveValues()
@@ -88,7 +88,7 @@ function(input, output, session) {
         Stressed = stressed_curve
         )
         
-        df$TermNum <- as.numeric(gsub("T", "", df$Term))
+        # df$TermNum <- as.numeric(gsub("T", "", df$Term))
         
         term_factor_levels <- df %>% 
             dplyr::mutate(Term = as.numeric(Term)) %>% 
@@ -108,7 +108,14 @@ function(input, output, session) {
                # scale_x_continuous(breaks = df$TermNum, labels = df$Term) +
                scale_color_manual(values = c("Base Curve" = "black", "Stressed Curve" = "red")) +
                theme_minimal()})
+        
+        print(df)
+        h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
+        saveRDS(h_spline, "yield_curve.rds")
+        
     })
+    
+    
     
     #                   
     #    # Prevents early reactivity
