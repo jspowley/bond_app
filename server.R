@@ -83,7 +83,7 @@ function(input, output, session) {
         current_pca <- load_to_pc(current_yield, PCs)
         
         df <- data.frame(
-        Term = colnames(pca_data),
+        Term = colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric(),
         Base = as.numeric(current_yield),
         Stressed = stressed_curve
         )
@@ -91,7 +91,7 @@ function(input, output, session) {
         # df$TermNum <- as.numeric(gsub("T", "", df$Term))
         
         term_factor_levels <- df %>% 
-            dplyr::mutate(Term = as.numeric(Term)) %>% 
+            dplyr::mutate(Term = as.numeric(df$Term)) %>% 
             dplyr::arrange(Term) %>% 
             dplyr::pull(Term) %>% 
             unique() %>% 
@@ -99,9 +99,9 @@ function(input, output, session) {
         
         print(term_factor_levels)
         
-        df <- df %>% dplyr::mutate(Term = factor(as.character(Term), levels = term_factor_levels))
+        df_viz <- df %>% dplyr::mutate(Term = factor(as.character(Term), levels = term_factor_levels))
         
-        output$yield_curve_plot <- renderPlot({ggplot(df, aes(x = Term)) +
+        output$yield_curve_plot <- renderPlot({ggplot(df_viz, aes(x = Term)) +
                geom_line(aes(y = Base, color = "Base Curve"), size = 1, group = 1) +
                geom_line(aes(y = Stressed, color = "Stressed Curve"), size = 1, group = 1, linetype=3) +
                labs(title = "Yield Curve Stress Testing", x = "Term (Months)", y = "Yield (%)") +
@@ -111,7 +111,7 @@ function(input, output, session) {
         
         print(df)
         h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
-        # saveRDS(h_spline, "yield_curve.rds")
+        saveRDS(h_spline, "yield_curve.rds")
         
         h_spline %>% 
             data.frame(term = as.numeric(names(.)), yield = .) %>% 

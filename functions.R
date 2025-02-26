@@ -53,7 +53,7 @@ pct_deltas <- function(df_in){
 fit_h_spline <- function(x, y, missing){
   yield_fn <- splinefun(x, y, method = "monoH.FC")
   missing <- unlist(missing)
-  out <- data.frame(missing = missing, pred = yield_fn(missing))
+  out <- data.frame(missing = as.numeric(missing), pred = yield_fn(as.numeric(missing)))
   output <- out %>% dplyr::pull(pred) %>% unlist() %>% as.numeric()
   names(output) <- out %>% dplyr::pull(missing)
   return(output)

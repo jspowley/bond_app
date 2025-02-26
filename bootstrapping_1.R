@@ -46,22 +46,22 @@ ai_fraction <- function(date_in, months_forward){
   return(days_through/days_in)
 }
 
-yield_curve %>% 
-  data.frame(term = as.numeric(names(.)), yield = .) %>% 
-  dplyr::rowwise() %>% 
-  dplyr::mutate(ai = ai_fraction(date_current, term))
+#yield_curve %>% 
+#  data.frame(term = as.numeric(names(.)), yield = .) %>% 
+#  dplyr::rowwise() %>% 
+#  dplyr::mutate(ai = ai_fraction(date_current, term))
 
-yield_bench <- yield_curve %>% 
-  data.frame(term = as.numeric(names(.)), yield = .)
+#yield_bench <- yield_curve %>% 
+#  data.frame(term = as.numeric(names(.)), yield = .)
 
-for(i in 1:14){
-  yield_bench <-
-    dplyr::bind_rows(yield_bench, yield_bench)
-}
+#for(i in 1:14){
+#  yield_bench <-
+#    dplyr::bind_rows(yield_bench, yield_bench)
+#}
 
-yield_bench %>% 
-  dplyr::rowwise() %>% 
-  dplyr::mutate(ai = ai_fraction(date_current, term))
+#yield_bench %>% 
+#  dplyr::rowwise() %>% 
+#  dplyr::mutate(ai = ai_fraction(date_current, term))
 
   
 ai_from_df <- function(df_in){  
@@ -100,10 +100,87 @@ ai_from_df <- function(df_in){
   ) %>% return()
 }
 
+#bs_ready <- yield_curve %>% 
+#  data.frame(term = as.numeric(names(.)), yield = .) %>% 
+#  ai_from_df()
+
+
+bootstrap_1 <- function(df_in){
+  
+  bs_ready <- df_in %>% 
+  dplyr::mutate(bs_group = term %% 6) %>% 
+  dplyr::arrange(term) %>% 
+  dplyr::group_by(bs_group) %>% 
+  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+                final_t = ceiling(term/2),
+                dcf = NA)
+
+
+
+output <- NULL
+for(i in 0:5){
+  
+  b <- bs_ready %>% 
+    dplyr::filter(term > 0) %>% 
+    dplyr::filter(bs_group == i)
+  
+  for(r in 1:nrow(b)){
+    
+    #print(r)
+    
+    target <- b %>% dplyr::slice(r)
+    #print(target)
+    yie <- target$yield
+    pri <- target$price
+    f_t <- target$final_t
+    
+    #print("conditional")
+    #print(pri)
+    #print(yie)
+    
+    if(r > 1){
+      
+      pre <- b %>% dplyr::slice(1:(r-1))
+      dtm_r1 <- pre %>% dplyr::slice(1)
+      dtm <- dtm_r1$days_in - dtm_r1$days_through
+      dtm <- dtm + (pre %>% dplyr::slice(-1) %>% dplyr::pull(days_in) %>% sum()) + target$days_in
+      
+      pri <- pri - (pre %>% dplyr::mutate(pv_removed = dcf * yie) %>% dplyr::pull(pv_removed) %>% sum())
+      
+    }else{
+      dtm <- target$days_in - target$days_through
+    }
+    
+    #print("write")
+    #print(pri)
+    dcf_out <- pri/((target$yield/2)*100 + 100)
+    #print(dcf_out)
+    b[r,"dcf"] <- dcf_out
+    #print("written")
+  }
+  
+  if(is.null(output)){
+    output <- b
+  }else{
+    output <- dplyr::bind_rows(output, b)
+  }
+}
+
+return(output)
+
+}
+
 yield_curve %>% 
-  data.frame(term = as.numeric(names(.)), yield = .) %>% 
+  data.frame(term = as.numeric(names(.)), yield = .) %>%
   ai_from_df() %>% 
   dplyr::mutate(bs_group = term %% 6) %>% 
   dplyr::arrange(term) %>% 
   dplyr::group_by(bs_group) %>% 
-  dplyr::mutate(price = 100 + (100*yield/2) * ai)
+  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+                final_t = ceiling(term/2),
+                dcf = NA) %>% View()
+
+yield_curve %>% 
+  data.frame(term = as.numeric(names(.)), yield = .) %>%
+  ai_from_df() %>% 
+  bootstrap_1() %>% View()
