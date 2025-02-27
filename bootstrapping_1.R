@@ -1,4 +1,4 @@
-library(explore)
+
 
 date_current <- as.Date("2020-02-01")
 
