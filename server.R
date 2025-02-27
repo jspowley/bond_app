@@ -113,11 +113,13 @@ function(input, output, session) {
         h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
         saveRDS(h_spline, "yield_curve.rds")
         
-        output$boot_dt <- renderDT({
-            h_spline %>% 
+        boot_df <- h_spline %>% 
             data.frame(term = as.numeric(names(.)), yield = .) %>% 
             ai_from_df(date_in = input$selected_yield) %>% 
             bootstrap_1()
+        
+        output$boot_dt <- renderDT({
+            boot_df
         })
         
     })

@@ -178,6 +178,32 @@ for(i in 0:5){
   }
 }
 
+  overnight <- bs_ready %>% dplyr::filter(term == 0)
+  c <- overnight$c
+  date_1 <- overnight$date_1
+  y <- overnight$y2 - 1
+  m <- overnight$m2
+  d <- overnight$d
+  date_2 <- ifelse(
+    c,
+    lubridate::ceiling_date(as_date(paste0(y,m,d), format = "%Y%m%d"), "month"),
+    as_date(paste0(y,m,d), format = "%Y%m%d") + 1
+  )
+  date_1 <- date_1 + 1
+  
+  days_in <- as.numeric(date_1 - date_2)
+  
+  overnight$days_in <- days_in
+  overnight$days_through <- days_in - 1
+  overnight$ai <- (days_in - 1)/days_in
+  overnight$dtm = 1
+  overnight$maturity <- date_1
+  overnight$final_t <- 1
+  overnight$price <- (overnight$yield/2)*100*overnight$ai + 100
+  overnight$dcf <- overnight$price / ((overnight$yield/2)*100 + 100)
+  
+
+  output <- dplyr::bind_rows(overnight, output)
 return(output %>% dplyr::arrange(term))
 
 }
