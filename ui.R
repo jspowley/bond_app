@@ -9,6 +9,7 @@
 
 library(shiny)
 library(bslib)
+library(lubridate)
 
 # Define UI for application that draws a histogram
 bslib::page_navbar(
@@ -20,7 +21,7 @@ bslib::page_navbar(
                  uiOutput("training_window_dates")),
             
             card(card_header("Yield"),
-            dateInput("selected_yield", "Select Yield Curve Date:", min = as.Date(ui_date_min), max = as.Date(ui_date_max), value = Sys.Date()),
+            dateInput("selected_yield", "Select Yield Curve Date:", min = as.Date(ui_date_min), max = as.Date(ui_date_max), value = ui_date_max),
             actionButton("max_date", "Reset to Most Recent")),
             
             card(card_header("Scenario, (Z Score)"),
