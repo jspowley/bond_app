@@ -116,7 +116,7 @@ function(input, output, session) {
         output$boot_dt <- renderDT({
             h_spline %>% 
             data.frame(term = as.numeric(names(.)), yield = .) %>% 
-            ai_from_df() %>% 
+            ai_from_df(date_in = input$selected_yield) %>% 
             bootstrap_1()
         })
         

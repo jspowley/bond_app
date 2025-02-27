@@ -64,17 +64,19 @@ ai_fraction <- function(date_in, months_forward){
 #  dplyr::mutate(ai = ai_fraction(date_current, term))
 
   
-ai_from_df <- function(df_in){  
+ai_from_df <- function(df_in, date_in){  
   
   df_in %>% 
   dplyr::mutate(
-    date_in = date_current,
+    date_in = date_in,
     y = as.numeric(lubridate::year(date_in)),
     c = date_in == lubridate::ceiling_date(date_in, "month")-1,
     # l = y %% 4,
     m = as.numeric(lubridate::month(date_in)),
     d = as.numeric(lubridate::day(date_in)),
     months_forward = (term - 1) %% 6 + 1,
+    mat_ref = ((term - 1) %% 12 + 1) > 6, 
+    year_mat_adj = floor((term-1)/12),
     m2 = m + months_forward,
     y2 = ifelse(m2 > 12, y + 1, y),
     m2 = (m2 - 1) %% 12 + 1,
@@ -84,6 +86,12 @@ ai_from_df <- function(df_in){
     m1 = sprintf("%02d", m1),
     m2 = sprintf("%02d", m2),
     d = sprintf("%02d", d),
+    
+    maturity = ifelse(mat_ref, 
+                      paste0(y1 + 1 + year_mat_adj, m1),
+                      paste0(y2 + year_mat_adj, m2)
+                      ),
+    
     date_1 = 
       ifelse(c,
              lubridate::ceiling_date(lubridate::as_date(paste0(y1,m1,"01"), format = "%Y%m%d"), "month")-1,
@@ -94,9 +102,15 @@ ai_from_df <- function(df_in){
       lubridate::ceiling_date(lubridate::as_date(paste0(y2,m2,"01"), format = "%Y%m%d"), "month")-1,
       lubridate::as_date(paste0(y2,m2,d), format = "%Y%m%d")
     ),
+    maturity = ifelse(
+      c,
+      lubridate::ceiling_date(lubridate::as_date(paste0(maturity,"01"), format = "%Y%m%d"), "month")-1,
+      lubridate::as_date(paste0(maturity,d), format = "%Y%m%d")
+    ),
     days_in = as.numeric(date_2 - date_1),
     days_through = as.numeric(date_in - date_1),
-    ai = days_through / days_in
+    ai = days_through / days_in,
+    dtm = as.numeric(as_date(maturity) - date_in)
   ) %>% return()
 }
 
@@ -113,7 +127,7 @@ bootstrap_1 <- function(df_in){
   dplyr::group_by(bs_group) %>% 
   dplyr::mutate(price = 100 + (100*yield/2) * ai,
                 final_t = ceiling(term/2),
-                dcf = NA, dtm = NA)
+                dcf = NA)
 
 
 
@@ -164,7 +178,7 @@ for(i in 0:5){
   }
 }
 
-return(output)
+return(output %>% dplyr::arrange(term))
 
 }
 
