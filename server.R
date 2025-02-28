@@ -61,9 +61,12 @@ function(input, output, session) {
         
         pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
         PCs <<- pca_result$rotation
+        saveRDS(PCs, "PCs.rds")
         
         pc_historical <<- load_to_pc(yield_matrix_centered, PCs)
         pc_deltas_historical <<- deltas(pc_historical, input$delta_lag)
+        saveRDS(pc_deltas_historical, "deltas.rds")
+        
         pc_deltas_sd <<- pc_deltas_historical %>% 
             dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
         
