@@ -90,6 +90,7 @@ function(input, output, session) {
         
         stress <- unload_pc(pcs, PCs) %>% as.vector() %>% unlist()
         current_yield <- treasury_data_server %>% filter(date <= input$selected_yield) %>% filter(date == max(date)) %>% select(-date)
+        saveRDS(current_yield, "yield_selected.rds")
    
         stressed_curve <- as.numeric(current_yield) + stress
         
