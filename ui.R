@@ -18,7 +18,8 @@ bslib::page_navbar(
         sidebar = sidebar(
             
             card(card_header("Model"),
-                 uiOutput("training_window_dates")),
+                 uiOutput("training_window_dates"),
+                 shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", min = 1, max = 3650, value = 1)),
             
             card(card_header("Yield"),
             dateInput("selected_yield", "Select Yield Curve Date:", min = as.Date(ui_date_min), max = as.Date(ui_date_max), value = ui_date_max),

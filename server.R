@@ -41,19 +41,29 @@ function(input, output, session) {
     pc_deltas_sd <- NULL
     app_state$init <- NULL
     
-    observeEvent(input$training_range,{
+    observeEvent(list(input$training_range, input$delta_lag),{
+        
+        req(input$training_range)
+        req(input$delta_lag)
+        
         print("Model Training")
+        
+        print(input$training_range)
         
         pca_data <<- treasury_data_server %>% 
             filter(date >= min(input$training_range) & date <= max(input$training_range)) %>% 
             select(-date)
         yield_mean <- colMeans(pca_data)
         yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
+        
+        print("Prior to PCA train")
+        print(str(pca_data))
+        
         pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
         PCs <<- pca_result$rotation
         
         pc_historical <<- load_to_pc(yield_matrix_centered, PCs)
-        pc_deltas_historical <<- deltas(pc_historical)
+        pc_deltas_historical <<- deltas(pc_historical, input$delta_lag)
         pc_deltas_sd <<- pc_deltas_historical %>% 
             dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
         
@@ -79,6 +89,11 @@ function(input, output, session) {
         current_yield <- treasury_data_server %>% filter(date <= input$selected_yield) %>% filter(date == max(date)) %>% select(-date)
    
         stressed_curve <- as.numeric(current_yield) + stress
+        
+        for(i in 1:length(stressed_curve)){
+            stressed_curve[i] <- max(stressed_curve[i],0)
+        }
+        
         # Where are PC levels currently, by current selected yield?
         current_pca <- load_to_pc(current_yield, PCs)
         
@@ -115,6 +130,9 @@ function(input, output, session) {
         
         boot_df <- h_spline %>% 
             data.frame(term = as.numeric(names(.)), yield = .) %>% 
+            #dplyr::rowwise() %>% 
+            #dplyr::mutate(yield = max(yield, 0)) %>% 
+            #dplyr::ungroup() %>% 
             ai_from_df(date_in = input$selected_yield) %>% 
             bootstrap_1()
         
