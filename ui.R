@@ -32,6 +32,7 @@ bslib::page_navbar(
                         min = -4, max = 4, value = 0, step = 0.01),
             sliderInput("curvature", "Curvature Factor",
                         min = -4, max = 4, value = 0, step = 0.01)),
+            textOutput("mono"),
             width = 800
         ),
             plotOutput("yield_curve_plot"),

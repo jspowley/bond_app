@@ -140,6 +140,14 @@ function(input, output, session) {
             boot_df
         })
         
+        mono <- boot_df %>% dplyr::mutate(x = 1, x = cumsum(x)) %>% 
+            dplyr::arrange(desc(dcf)) %>% 
+            dplyr::mutate(x = x - dplyr::lag(x)) %>% 
+            dplyr::filter(x != 1) %>% 
+            dplyr::pull(x)
+        
+        output$mono <- renderText({ifelse(length(mono) > 0, "Zero Curve Is NOT Monotonic!", "Zero Curve Abides Monotonicity")})
+        
     })
     
     
