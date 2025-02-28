@@ -144,6 +144,8 @@ function(input, output, session) {
             boot_df
         })
         
+        saveRDS(boot_df, "Final Pricing Startpoint/boot.rds")
+        
         mono <- boot_df %>% dplyr::mutate(x = 1, x = cumsum(x)) %>% 
             dplyr::arrange(desc(dcf)) %>% 
             dplyr::mutate(x = x - dplyr::lag(x)) %>% 
