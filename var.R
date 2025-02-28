@@ -8,7 +8,7 @@ PCs <- readRDS("PCs.rds")
 deltas_in <- readRDS("deltas.rds")
 curve_in <- readRDS("yield_selected.rds")
 
-curve_in %>% data.frame()
+curve_in <- curve_in %>% data.frame()
 
 yield_pc <- load_to_pc(curve_in, PCs)
 
@@ -17,6 +17,8 @@ descriptive_stats <- NULL
 
 for(i in 1:ncol(deltas_in)){
   
+  #print(i)
+  #print(yield_pc[[i]])
   c_in <- deltas_in[i]
   c_name <- colnames(c_in)
   c_in <- deltas_in[[i]]
@@ -52,9 +54,10 @@ for(i in 1:ncol(deltas_in)){
     sigma = sd(c_in),
     skew = moments::skewness(c_in),
     ekurt = moments::kurtosis(c_in) - 3
-  ) + mean(c_in)
+  ) + mean(c_in) + yield_pc[[i]] # Adding in average and the base yield curve.
+  
   }else{
-    r_sample <- sample(c_in, sample_size, replace = TRUE)
+    r_sample <- sample(c_in, sample_size, replace = TRUE) + yield_pc[[i]]
   }
   
   r_sample_df <- data.frame(temp = r_sample)
@@ -81,6 +84,8 @@ for(i in 1:ncol(deltas_in)){
     descriptive_stats <- dplyr::bind_rows(descriptive_stats, desc_df)
   }
 }
+
+sample_yields <- unload_pc(sample_deltas, PCs)
 
 # Charting
 
