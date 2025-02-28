@@ -199,7 +199,7 @@ for(i in 0:5){
   overnight$dtm = 1
   overnight$maturity <- date_1
   overnight$final_t <- 1
-  overnight$price <- (overnight$yield/2)*100*overnight$ai + 100
+  overnight$price <- 100*((1+overnight$yield/2)^overnight$ai-1) + 100
   overnight$dcf <- overnight$price / ((overnight$yield/2)*100 + 100)
   
 
