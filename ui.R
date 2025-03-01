@@ -37,29 +37,43 @@ bslib::page_navbar(
             
             card(
               card_header("Bond A data"),
-              shiny::numericInput(
-                "bondA_face_value",
-                "Bond A Face Value",
-                value = 100
+              fluidRow(
+                column(
+                  4,
+                  shiny::numericInput(
+                    "bondA_face_value",
+                    "Bond A Face Value",
+                    value = 100
+                  )
               ),
-              shiny::numericInput(
+              column(
+                4,
+                shiny::numericInput(
                 "bondA_coupon_rate",
                 "Bond A Coupon Rate (%)",
                 value = 5
+                )
               ),
-              shiny::dateInput(
-                "bondA_maturity_date",
-                "Bond A Maturity Date:",
-                min   = as.Date(ui_date_min),
-                max   = as.Date(ui_date_max),
-                value = as.Date(ui_date_max)
+              column(
+                4,
+                shiny::dateInput(
+                  "bondA_maturity_date",
+                  "Bond A Maturity Date:",
+                  min = as.Date(ui_date_max),
+                  max = as.Date(ui_date_max + 365*30),
+                  value = as.Date(ui_date_max + 365)
+                )
+              )
               ),
               actionButton("addBond", "Add Bond")
-            )
+            ),
+            uiOutput("bondB_card")
         ),
+            valueBoxOutput("portfolio_value_box"),
             plotOutput("yield_curve_plot"),
             plotOutput("pc_risk_plot"),
             plotOutput("pc_pct_risk_plot"),
-            DT::DTOutput("boot_dt")
+            DT::DTOutput("boot_dt"),
+            
         )
     )

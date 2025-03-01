@@ -8,9 +8,11 @@
 #
 
 library(shiny)
+library(shinydashboard)
+
 
 # Define server logic required to draw a histogram
-function(input, output, session) {
+server <- function(input, output, session) {
 
 # Input Rendering
     
@@ -156,7 +158,69 @@ function(input, output, session) {
         
     })
     
+    observeEvent(input$addBond, {
+      output$bondB_card <- renderUI({
+        card(
+          card_header("Bond B data"),
+          fluidRow(
+            column(
+              4,
+          numericInput(
+            "BondB_face_value",
+            "Bond B Face Value",
+            value = input$bondA_face_value
+          )
+          ),
+          column(4,
+          numericInput(
+            "bondB_coupon_rate",
+            "Bond B Coupon Rate (%)",
+            value = input$bondA_coupon_rate
+          )
+          ),
+          column(4,
+          dateInput(
+            "bondB_maturity_date",
+            "Bond B Maturity date",
+            value = input$bondA_maturity_date
+          )
+          )
+        )
+        )
+      })
+    })
     
+    # Portfolio value
+    
+    output$portfolio_value_box <- shinydashboard::renderValueBox({
+      req(input$bondA_face_value,
+          input$bondA_coupon_rate,
+          input$bondA_maturity_date)
+      
+      bond_data <- tibble::tibble(
+        bond_id = c("Bond A"),
+        face_value = c(input$bondA_face_value),
+        coupon_rate = c(input$bondA_coupon_rate),
+        maturity_date = c(as.character(input$bondA_maturity_date))
+      )
+      
+      today <- as.character(input$selected_yield)
+      
+      boot <- read_rds("boot.rds") # is this right???
+      
+      result <- price_portfolio(bond_data, today, boot)
+      print(result$bond_data)
+      portfolio_value <- result$portfolio_value
+      
+      formatted_value <- scales::dollar(portfolio_value)
+      
+      
+      shinydashboard::valueBox(
+        value = formatted_value,
+        subtitle = "Portfolio Value",
+        icon = icon("chart-line")
+      )
+    })
     
     #                   
     #    # Prevents early reactivity
