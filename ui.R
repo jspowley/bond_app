@@ -33,7 +33,29 @@ bslib::page_navbar(
             sliderInput("curvature", "Curvature Factor",
                         min = -4, max = 4, value = 0, step = 0.01)),
             textOutput("mono"),
-            width = 800
+            width = 800,
+            
+            card(
+              card_header("Bond A data"),
+              shiny::numericInput(
+                "bondA_face_value",
+                "Bond A Face Value",
+                value = 100
+              ),
+              shiny::numericInput(
+                "bondA_coupon_rate",
+                "Bond A Coupon Rate (%)",
+                value = 5
+              ),
+              shiny::dateInput(
+                "bondA_maturity_date",
+                "Bond A Maturity Date:",
+                min   = as.Date(ui_date_min),
+                max   = as.Date(ui_date_max),
+                value = as.Date(ui_date_max)
+              ),
+              actionButton("addBond", "Add Bond")
+            )
         ),
             plotOutput("yield_curve_plot"),
             plotOutput("pc_risk_plot"),
