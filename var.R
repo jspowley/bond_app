@@ -87,6 +87,41 @@ for(i in 1:ncol(deltas_in)){
 
 sample_yields <- unload_pc(sample_deltas, PCs)
 
+# Interpolation stage on yield (bootstrap ready)
+inter_yields <- sample_yields %>% 
+  dplyr::mutate(iter = 1, iter = cumsum(iter)) %>% 
+  tidyr::pivot_longer(-iter) %>% 
+  dplyr::group_by(iter) %>% 
+  dplyr::summarise(fit = list(fit_h_spline(x = as.numeric(name), y = value, missing = 0:360)), .groups = "keep") %>% 
+  unnest_longer(fit)
+  
+# Getting AI Ratios, etc. Quite slow, may need optimization, but is still "bearable"
+input_date <- Sys.Date()
+
+yields_with_ai <- inter_yields %>% 
+  dplyr::group_by(iter) %>% 
+  dplyr::rename(term = fit_id, yield = fit) %>% 
+  dplyr::mutate(term = as.numeric(term)) %>% 
+  ai_from_df(as_date(input_date)) %>% 
+  dplyr::ungroup()
+
+# Running the zero curve bootstrap. 100% needs rcpp
+# Ouch, this is slow...
+
+output <- NULL
+for(i in 1:sample_size){
+  print(i)
+  out <- yields_with_ai %>% 
+    dplyr::filter(iter == i) %>% 
+    bootstrap_1()
+  
+  if(is.null(output)){
+    output <- out
+  }else{
+    output <- dplyr::bind_rows(output, out)
+  }
+}
+
 # Charting
 
 pc_risk_driver_dist <- deltas_in %>% 

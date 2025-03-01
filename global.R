@@ -1,6 +1,7 @@
 library(tidyverse)
 library(tidyquant)
 library(DT)
+library(Rcpp)
 
 source("treasury_scrape.R")
 source("functions.R")
