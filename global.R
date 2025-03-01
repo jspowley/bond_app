@@ -113,8 +113,6 @@ missing_vals <- dplyr::left_join(missing_vals, treasury_data, by = "date") %>%
     .groups = "keep"
   )
 
-
-
 treasury_data_int <- 
   treasury_data %>% 
   dplyr::select(value, months, date) %>% 
