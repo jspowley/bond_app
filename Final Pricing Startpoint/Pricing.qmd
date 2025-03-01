@@ -1,0 +1,155 @@
+---
+title: "Bond Pricing"
+format: html
+editor: visual
+---
+
+
+```{r}
+
+# Load Dependences:
+fit_h_spline <- function(x, y, missing){
+ 
+  yield_fn <- splinefun(x, y, method = "monoH.FC")
+  missing <- unlist(missing)
+  out <- data.frame(missing = as.numeric(missing), pred = yield_fn(as.numeric(missing)))
+  output <- out %>% dplyr::pull(pred) %>% unlist() %>% as.numeric()
+  names(output) <- out %>% dplyr::pull(missing)
+  return(output)
+}
+
+library(lubridate)
+library(dplyr)
+library(tidyverse)
+
+boot <- read_rds("boot.rds")
+
+# PLAN:
+
+## Input bond info (coupon, maturity date, face value)
+## Output a price for the portfolio value
+## Need to use spot rates for discount
+
+
+
+MaturityDate <- "2029-01-13"
+MaturityDate <- lubridate::ymd(MaturityDate)
+Today <- "2025-02-08"
+Today <- lubridate::ymd(Today)
+CoupRate <- 4
+FaceValue <- 100
+
+
+# fun part
+dtm <- as.numeric(MaturityDate - Today)
+dtm_detailed <- seq.Date(from = Today, to = MaturityDate, by = "day")
+
+cf_dates <- as.tibble(seq.Date(from = MaturityDate, to = Today, by = "-6 months"))
+
+colnames(cf_dates) <- "date"
+
+cf_dates <- cf_dates %>% 
+  mutate(cf = if_else(date == MaturityDate, FaceValue + ((CoupRate / 100) / 2) * FaceValue , CoupRate / 2),
+         dtm = as.numeric(date - Today),
+         days_in = as.numeric(date - Today)) %>% 
+  select(date, dtm, days_in, cf) %>% 
+  arrange(date)
+
+# x = dtm, y = DCF, missing = vector of missing values
+strap_df <-
+  as_tibble(fit_h_spline(x = boot$dtm, y = boot$dcf, missing = cf_dates$dtm)) %>% 
+  mutate(
+    dtm = cf_dates$dtm)
+
+colnames(strap_df) <- c("dcf", "dtm")
+
+cf_dates <- left_join(cf_dates, strap_df) %>% 
+  mutate(pv = dcf * cf)
+
+portfolio_value <- sum(cf_dates$pv)
+
+
+# Now let's make it into a fucntio and test
+
+
+library(dplyr)
+library(lubridate)
+
+price_bond <- function(face_value, coupon_rate, maturity_date, today, boot_df) {
+
+  maturity_date <- lubridate::ymd(maturity_date)
+  
+  today <- lubridate::ymd(today)
+  
+  dtm <- as.numeric(maturity_date - today)
+  
+  cf_dates <- seq.Date(from = maturity_date, to = today, by = "-6 months") %>%
+    tibble::as_tibble() %>%
+    rename(date = value) %>%
+    mutate(
+      cf = dplyr::if_else(
+        date == maturity_date, 
+        face_value + ((coupon_rate / 100) / 2) * face_value, 
+        (coupon_rate / 2)),
+      dtm = as.numeric(date - today)) %>%
+    dplyr::arrange(date)
+  
+  strap_df <- tibble::as_tibble(
+    fit_h_spline(
+      x = boot_df$dtm,
+      y = boot_df$dcf,
+      missing = cf_dates$dtm
+    )
+  ) %>%
+    mutate(dtm = cf_dates$dtm) %>%
+    rename(dcf = value)
+  
+
+  cf_dates <- cf_dates %>%
+    left_join(strap_df, by = "dtm") %>%
+    mutate(pv = dcf * cf)
+  
+  bond_value <- sum(cf_dates$pv, na.rm = TRUE)
+  
+  return(bond_value)
+}
+
+# Works for one bond.
+portfolio_value <-  price_bond(100, 5, "2029-01-13", "2025-02-08", boot)
+
+# Let's try to generalize to two bonds by letting user input a list of bonds
+## Then we will transform to a wide df with each  row representing bond inputs
+### Then we will price each row individually using our single pricing function
+
+price_portfolio <- function(bond_data, today, boot_df) {
+
+  bond_data <- bond_data %>%
+    rowwise() %>% #apply the price_bond function to all rows
+    mutate(
+      bond_value = price_bond(face_value, coupon_rate, maturity_date, today, boot_df)) %>%
+    ungroup()
+  
+  #Sum bond values
+  portfolio_value <- sum(bond_data$bond_value, na.rm = TRUE)
+  
+  # return list of what we care about (each row of bond metrics, total portfolio value)
+  list(
+    bond_data = bond_data,
+    portfolio_value = portfolio_value
+  )
+}
+
+my_bonds <- tibble::tibble(
+  bond_id = c("Bond A", "Bond B", "Bond C"),
+  face_value = c(100, 100, 100),
+  coupon_rate = c(5, 2.5, 6),
+  maturity_date = c("2029-01-13", "2030-06-01", "2027-12-31")
+)
+
+
+portfolio_value <- price_portfolio(my_bonds, today = "2025-02-08", boot)
+
+portfolio_value$bond_data # bond metrics
+portfolio_value$portfolio_value # portfolio value
+
+```
