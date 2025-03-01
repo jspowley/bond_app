@@ -105,22 +105,33 @@ yields_with_ai <- inter_yields %>%
   ai_from_df(as_date(input_date)) %>% 
   dplyr::ungroup()
 
+saveRDS(yields_with_ai, "sample_yields.rds")
+
+bs_ready <- yields_with_ai %>% 
+  dplyr::mutate(bs_group = term %% 6) %>% 
+  dplyr::arrange(term) %>% 
+  dplyr::group_by(bs_group) %>% 
+  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+                final_t = ceiling(term/2),
+                dcf = NA)
 # Running the zero curve bootstrap. 100% needs rcpp
 # Ouch, this is slow...
 
-output <- NULL
-for(i in 1:sample_size){
-  print(i)
-  out <- yields_with_ai %>% 
-    dplyr::filter(iter == i) %>% 
-    bootstrap_1()
-  
-  if(is.null(output)){
-    output <- out
-  }else{
-    output <- dplyr::bind_rows(output, out)
-  }
-}
+#output <- NULL
+#for(i in 1){
+#  print(i)
+#  out <- yields_with_ai %>% 
+#    dplyr::filter(iter == i) %>% 
+#    bootstrap_1()
+#  
+#  if(is.null(output)){
+#    output <- out
+#  }else{
+#    output <- dplyr::bind_rows(output, out)
+#  }
+#}
+
+# From 8 hours to less than a second, pretty good... I'll need to use Rcpp more often
 
 # Charting
 

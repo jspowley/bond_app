@@ -1,28 +1,36 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-// This is a simple example of exporting a C++ function to R. You can
-// source this function into an R session using the Rcpp::sourceCpp 
-// function (or via the Source button on the editor toolbar). Learn
-// more about Rcpp at:
-//
-//   http://www.rcpp.org/
-//   http://adv-r.had.co.nz/Rcpp.html
-//   http://gallery.rcpp.org/
-//
-
 // [[Rcpp::export]]
-
-NumericVector timesTwo(NumericVector x) {
-  return x * 2;
+NumericVector bootstrap(IntegerVector iter, IntegerVector term, IntegerVector bs_group, NumericVector yield, NumericVector price, NumericVector dcf, int r_count){
+  
+  int current_iter = 0;
+  int current_group = 0;
+  int chapter_start = 0;
+  
+  for (int i = 0; i < r_count; i++){
+    
+    if(iter[i] != current_iter){
+      current_iter = iter[i];
+      dcf[i] = 0;
+    }else{
+    
+      if(bs_group[i] != current_group){
+        current_group = bs_group[i];
+        chapter_start = i;
+      }
+    
+      double prior_dcf = 0;
+      
+      if(i > chapter_start){
+        for (int s = chapter_start; s < i; s++){
+          prior_dcf = prior_dcf + dcf[s] * yield[i]/2 * 100;
+        }
+      }
+      
+      dcf[i] = (price[i] - prior_dcf)/(100 + 100*yield[i]/2);
+      
+    }
+  }
+  return dcf;
 }
-
-
-// You can include R code blocks in C++ files processed with sourceCpp
-// (useful for testing and development). The R code will be automatically 
-// run after the compilation.
-//
-
-//*** R
-//timesTwo(42)
-//*/

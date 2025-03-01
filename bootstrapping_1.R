@@ -125,7 +125,7 @@ bootstrap_1 <- function(df_in){
   dplyr::mutate(bs_group = term %% 6) %>% 
   dplyr::arrange(term) %>% 
   dplyr::group_by(bs_group) %>% 
-  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+  dplyr::mutate(price = 100 + 100*((1+yield/2)^ai-1),
                 final_t = ceiling(term/2),
                 dcf = NA)
 
