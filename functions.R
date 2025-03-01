@@ -63,3 +63,55 @@ fit_h_spline <- function(x, y, missing){
 }
 
 
+price_portfolio <- function(bond_data, today, boot_df) {
+  today_parsed <- lubridate::ymd(today)
+  ## Inner function
+  price_bond <- function(face_value, coupon_rate, maturity_date) {
+    
+    maturity_date_parsed <- lubridate::ymd(maturity_date)
+    
+    cf_dates <- seq.Date(from = maturity_date_parsed, to = today_parsed, by = "-6 months") %>%
+      tibble::as_tibble() %>%
+      rename(date = value) %>%
+      mutate(
+        cf = dplyr::if_else(
+          date == maturity_date_parsed,
+          ## Final coupon and princ payment
+          face_value + ((coupon_rate / 100) / 2) * face_value,
+          (coupon_rate / 2)
+        ),
+        dtm = as.numeric(date - today_parsed)
+      ) %>%
+      arrange(date)
+    
+    ## DCF Interpolation
+    strap_df <- tibble::as_tibble(
+      fit_h_spline(
+        x = boot_df$dtm,
+        y = boot_df$dcf,
+        missing = cf_dates$dtm
+      )
+    ) %>%
+      mutate(dtm = cf_dates$dtm) %>%
+      rename(dcf = value)
+    
+    cf_dates <- cf_dates %>%
+      left_join(strap_df, by = "dtm") %>%
+      mutate(pv = dcf * cf)
+    
+    bond_value <- sum(cf_dates$pv, na.rm = TRUE)
+    return(bond_value)
+  }
+  ## perform inner bond pricing with rowwise function
+  bond_data <- bond_data %>%
+    rowwise() %>%
+    mutate(bond_value = price_bond(face_value, coupon_rate, maturity_date)) %>%
+    ungroup()
+  
+  portfolio_value <- sum(bond_data$bond_value, na.rm = TRUE)
+  
+  list(
+    bond_data = bond_data,
+    portfolio_value = portfolio_value
+  )
+}
