@@ -6,6 +6,8 @@ library(Rcpp)
 source("treasury_scrape.R")
 source("functions.R")
 source("bootstrapping_1.R")
+source("accrued_interest_cpp.R")
+source("var.R")
 # maturities_included <- 10
 
 # Getting Treasury Data

@@ -7,11 +7,11 @@ library(tidyverse)
 Rcpp::sourceCpp("bootstrap_optimized.cpp")
 source("accrued_interest_cpp.R")
 
-sample_size <- 10000
+#sample_size <- 10000
 
-PCs_in <- readRDS("PCs.rds")
-deltas_in <- readRDS("deltas.rds")
-curve_in <- readRDS("yield_selected.rds")
+#PCs_in <- readRDS("PCs.rds")
+#deltas_in <- readRDS("deltas.rds")
+#curve_in <- readRDS("yield_selected.rds")
 
 pca_sample_yields <- function(curve_in, deltas_in, PCs_in, sample_size){
   
@@ -125,6 +125,16 @@ yields_in <- yields_in %>%
   return(yields_in)
 }
 
+prep_ai_for_bs <- function(yields_in){
+  yields_in %>% 
+    dplyr::mutate(bs_group = term %% 6) %>% 
+    dplyr::arrange(iter, bs_group, term) %>% 
+    dplyr::mutate(price = 100 + 100*((1+yield/2)^ai-1),
+                  final_t = ceiling(term/2),
+                  dcf = NA) %>% 
+    return()
+}
+
 reconcile_t_0 <- function(boot_df_in){
   
   others <- boot_df_in %>% dplyr::filter(term > 0)
@@ -172,8 +182,8 @@ yields_in %>%
 
 #profvis::profvis(
   
-  test2 <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% 
-    bootstrap_cpp()
+#  test2 <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% 
+#    bootstrap_cpp()
     
 #)
 
@@ -215,16 +225,16 @@ interpolate_boot <- function(boot_df, portfolio_cf){
 
 # Charting
 
-pc_risk_driver_dist <- deltas_in %>% 
-  dplyr::mutate(temp = 1) %>% 
-  tidyr::pivot_longer(cols = -temp) %>% 
-  dplyr::select(-temp) %>% 
-  dplyr::mutate(name =  factor(name, levels = paste0("PC", 1:14))) %>% 
-  ggplot() +
-  geom_histogram(aes(x = value), bins = 100) + facet_wrap(~name)
+#pc_risk_driver_dist <- deltas_in %>% 
+#  dplyr::mutate(temp = 1) %>% 
+#  tidyr::pivot_longer(cols = -temp) %>% 
+#  dplyr::select(-temp) %>% 
+#  dplyr::mutate(name =  factor(name, levels = paste0("PC", 1:14))) %>% 
+#  ggplot() +
+#  geom_histogram(aes(x = value), bins = 100) + facet_wrap(~name)
 
-pc_risk_driver_dist
+# pc_risk_driver_dist
 
-ggplotly(pc_risk_driver_dist)
+# ggplotly(pc_risk_driver_dist)
 
-deltas_in$PC3 %>% moments::kurtosis()
+# deltas_in$PC3 %>% moments::kurtosis()

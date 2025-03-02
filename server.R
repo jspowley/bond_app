@@ -139,8 +139,14 @@ server <- function(input, output, session) {
             #dplyr::rowwise() %>% 
             #dplyr::mutate(yield = max(yield, 0)) %>% 
             #dplyr::ungroup() %>% 
-            ai_from_df(date_in = input$selected_yield) %>% 
-            bootstrap_1()
+            # ai_from_df(date_in = input$selected_yield) %>% 
+            dplyr::mutate(
+              date_in = input$selected_yield) %>% 
+            #  date_in = as_date(input_date)) %>%
+            ai_df_cpp() %>% 
+          dplyr::mutate(iter = 1) %>% 
+            prep_ai_for_bs() %>% 
+            bootstrap_cpp()
         
         output$boot_dt <- renderDT({
             boot_df
