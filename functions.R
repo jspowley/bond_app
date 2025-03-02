@@ -116,6 +116,15 @@ price_portfolio <- function(bond_data, today, boot_df) {
   )
 }
 
-get_bond_schedule <- function(bond_data){
-  
-}
+#get_bond_schedule <- function(bond_data){
+#  
+#  output <- list()
+#  
+#  for(i in 1:nrow(bond_data)){
+#    bond_data[i,] %>% .$maturity_date
+#  }
+#  
+#}
+
+#bond_data <- readRDS("bond_data.rds")
+#get_bond_schedule(bond_data)
