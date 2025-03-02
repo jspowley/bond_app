@@ -5,11 +5,11 @@ library(profvis)
 
 Rcpp::sourceCpp("bootstrap_optimized.cpp")
 
-#sample_size <- 10000
+sample_size <- 10000
 
-#PCs_in <- readRDS("PCs.rds")
-#deltas_in <- readRDS("deltas.rds")
-#curve_in <- readRDS("yield_selected.rds")
+PCs_in <- readRDS("PCs.rds")
+deltas_in <- readRDS("deltas.rds")
+curve_in <- readRDS("yield_selected.rds")
 
 pca_sample_yields <- function(curve_in, deltas_in, PCs_in, sample_size){
   
@@ -151,9 +151,6 @@ reconcile_t_0 <- function(boot_df_in){
     return()
 }
 
-profvis::profvis(
-  pca_sample_yields(curve_in, deltas_in, PCs_in)
-)
 
 bootstrap_cpp <- function(yields_in){
 boot_dcf <- bootstrap(
@@ -164,11 +161,19 @@ boot_dcf <- bootstrap(
   price = yields_in$price,
   dcf = yields_in$dcf,
   r_count = nrow(yields_in)
-) %>% 
-  reconcile_t_0()
+)
 
 yields_in$dcf <- boot_dcf
-return(yields_in)
+
+yields_in %>% 
+  reconcile_t_0() %>% 
+  return()
+}
+
+test <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% bootstrap_cpp()
+
+interpolate_boot <- function(boot_df, portfolio_cf){
+  
 }
 
 #yields_in %>%
