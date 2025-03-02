@@ -77,8 +77,8 @@ price_portfolio <- function(bond_data, today, boot_df) {
         cf = dplyr::if_else(
           date == maturity_date_parsed,
           ## Final coupon and princ payment
-          face_value + ((coupon_rate / 100) / 2) * face_value,
-          (coupon_rate / 2)
+          face_value + ((coupon_rate * face_value / 100) / 2),
+          (coupon_rate * face_value / 100) / 2
         ),
         dtm = as.numeric(date - today_parsed)
       ) %>%

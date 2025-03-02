@@ -31,9 +31,9 @@ boot <- read_rds("boot.rds")
 
 
 
-MaturityDate <- "2028-02-29"
+MaturityDate <- "2030-01-01"
 MaturityDate <- lubridate::ymd(MaturityDate)
-Today <- "2025-02-08"
+Today <- "2025-03-01"
 Today <- lubridate::ymd(Today)
 CoupRate <- 4
 FaceValue <- 100
@@ -48,7 +48,7 @@ cf_dates <- as.tibble(seq.Date(from = MaturityDate, to = Today, by = "-6 months"
 colnames(cf_dates) <- "date"
 
 cf_dates <- cf_dates %>% 
-  mutate(cf = if_else(date == MaturityDate, FaceValue + ((CoupRate / 100) / 2) * FaceValue , CoupRate / 2),
+  mutate(cf = if_else(date == MaturityDate, FaceValue + ((CoupRate * FaceValue / 100) / 2), ((CoupRate * FaceValue / 100) / 2)),
          dtm = as.numeric(date - Today),
          days_in = as.numeric(date - Today)) %>% 
   select(date, dtm, days_in, cf) %>% 
@@ -146,7 +146,7 @@ my_bonds <- tibble::tibble(
 )
 
 
-portfolio_value <- price_portfolio(my_bonds, today = "2025-02-08", boot)
+portfolio_value <- price_portfolio(my_bonds, today = "2025-03-01", boot)
 
 portfolio_value$bond_data # bond metrics
 portfolio_value$portfolio_value # portfolio value
