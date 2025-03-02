@@ -19,11 +19,11 @@ server <- function(input, output, session) {
     max_date <- max(treasury_data_server$date)
     min_date <- min(treasury_data_server$date)
     maturities_included <- ncol(treasury_data_server) - 1
-    print(head(treasury_data_server))
-    print(str(treasury_data_server))
+    # print(head(treasury_data_server))
+    # print(str(treasury_data_server))
     
-    print(min_date)
-    print(max_date)
+    # print(min_date)
+    # print(max_date)
     
     # Model Training Window
     output$training_window_dates <- renderUI(sliderInput(inputId = "training_range", label = "Training Window (PCA and VAR):",
@@ -48,9 +48,9 @@ server <- function(input, output, session) {
         req(input$training_range)
         req(input$delta_lag)
         
-        print("Model Training")
+        # print("Model Training")
         
-        print(input$training_range)
+        # print(input$training_range)
         
         pca_data <<- treasury_data_server %>% 
             filter(date >= min(input$training_range) & date <= max(input$training_range)) %>% 
@@ -58,8 +58,8 @@ server <- function(input, output, session) {
         yield_mean <- colMeans(pca_data)
         yield_matrix_centered <- sweep(pca_data, 2, yield_mean, "-")
         
-        print("Prior to PCA train")
-        print(str(pca_data))
+        # print("Prior to PCA train")
+        # print(str(pca_data))
         
         pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
         PCs <<- pca_result$rotation
@@ -78,13 +78,13 @@ server <- function(input, output, session) {
             app_state$init <- app_state$init + 1
         }
         
-        print("Done modelling")
+        # print("Done modelling")
     })
     
     observeEvent(list(input$selected_yield, input$parallel_shift, input$steepening, input$curvature, app_state$init), {
-        print("Running Yield Curve Plot")
+        # print("Running Yield Curve Plot")
         req(pc_deltas_sd)
-        print(input$selected_yield)
+        # print(input$selected_yield)
         
         pcs <- c(input$parallel_shift*pc_deltas_sd$PC1, input$steepening*pc_deltas_sd$PC2, input$curvature*pc_deltas_sd$PC3)
         pcs <- c(pcs, rep(0, ncol(PCs) - length(pcs)))
@@ -118,7 +118,7 @@ server <- function(input, output, session) {
             unique() %>% 
             as.character()
         
-        print(term_factor_levels)
+        # print(term_factor_levels)
         
         df_viz <- df %>% dplyr::mutate(Term = factor(as.character(Term), levels = term_factor_levels))
         
@@ -130,7 +130,7 @@ server <- function(input, output, session) {
                scale_color_manual(values = c("Base Curve" = "black", "Stressed Curve" = "red")) +
                theme_minimal()})
         
-        print(df)
+        # print(df)
         h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
         saveRDS(h_spline, "yield_curve.rds")
         
@@ -147,6 +147,8 @@ server <- function(input, output, session) {
           dplyr::mutate(iter = 1) %>% 
             prep_ai_for_bs() %>% 
             bootstrap_cpp()
+        
+        app_state$boot_stressed <- boot_df
         
         output$boot_dt <- renderDT({
             boot_df
@@ -193,35 +195,79 @@ server <- function(input, output, session) {
     
     # Portfolio value
     
-    output$portfolio_value_box <- shinydashboard::renderValueBox({
-      req(num_bonds() > 0)
-      # sapply dynamically creates multiple inputs for each of the face values, coupon rates, and maturity dates
-      bond_data <<- tibble::tibble(
+    bond_data <- reactive(
+      
+      {
+      
+      req(num_bonds())
+      
+      tibble::tibble(
         bond_id = paste0("Bond ", 1:num_bonds()),
         face_value = sapply(1:num_bonds(), function(i) input[[paste0("face_value_", i)]]),
         coupon_rate = sapply(1:num_bonds(), function(i) input[[paste0("coupon_rate_", i)]]),
         maturity_date = sapply(1:num_bonds(), function(i) as.character(input[[paste0("maturity_date_", i)]]))
-      )
+       )
+      
+      }
+      
+    )
+    
+    observeEvent(bond_data(), {
+      print("This shit doesn't work")
+      print(bond_data())
       
       today <- Sys.Date()
       
-      boot <- read_rds("boot.rds")
+      print(str(bond_data()$face_value[1]))
+      print(str(bond_data()$coupon_rate[1]))
       
-      result <- price_portfolio(bond_data, today, boot)
+      if(!is.null(bond_data()$face_value[[1]]) & !is.null(bond_data()$coupon_rate[[1]])){
+        boot <-  app_state$boot_stressed
+        result <- price_portfolio(bond_data(), today, boot)
+        portfolio_value <- result$portfolio_value
+        formatted_value <- scales::dollar(portfolio_value)
+        output$stressed_curve_scalar_value <- renderText(
+          {formatted_value}
+        )
+      }
       
-      print(result$bond_data)
-      
-      portfolio_value <- result$portfolio_value
-      
-      formatted_value <- scales::dollar(portfolio_value)
-      
-      
-      shinydashboard::valueBox(
-        value = formatted_value,
-        subtitle = "Portfolio Value",
-        icon = icon("chart-line")
-      )
     })
+    
+    # IMPORTANT CODE BELOW
+    
+    #output$portfolio_value_box <- shinydashboard::renderValueBox({
+    #  req(num_bonds() > 0)
+    #  # sapply dynamically creates multiple inputs for each of the face values, coupon rates, and maturity dates
+    #  bond_data <<- tibble::tibble(
+    #    bond_id = paste0("Bond ", 1:num_bonds()),
+    #    face_value = sapply(1:num_bonds(), function(i) input[[paste0("face_value_", i)]]),
+    #    coupon_rate = sapply(1:num_bonds(), function(i) input[[paste0("coupon_rate_", i)]]),
+    #    maturity_date = sapply(1:num_bonds(), function(i) as.character(input[[paste0("maturity_date_", i)]]))
+    #  )
+    #  
+    #  today <- Sys.Date()
+    #  
+    #  # boot <- read_rds("boot.rds")
+    #  boot <-  app_state$boot_stressed
+    #  
+    #  result <- price_portfolio(bond_data, today, boot)
+    #  
+    #  # print(result$bond_data)
+    #  
+    #  portfolio_value <- result$portfolio_value
+    #  
+    #  formatted_value <- scales::dollar(portfolio_value)
+    #  
+    #  
+    #  shinydashboard::valueBox(
+    #    value = formatted_value,
+    #    subtitle = "Portfolio Value",
+    #    icon = icon("chart-line")
+    #  )
+    #})
+    
+    # IMPORTANT CODE ABOVE
+    
     
     #                   
     #    # Prevents early reactivity

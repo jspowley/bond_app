@@ -42,11 +42,15 @@ bslib::page_navbar(
             # Reactive Counter To Increase/Decrease Bonds
               #https://www.youtube.com/watch?v=ML54auObmL8
         ),
-            valueBoxOutput("portfolio_value_box"),
-            plotOutput("yield_curve_plot"),
-            plotOutput("pc_risk_plot"),
-            plotOutput("pc_pct_risk_plot"),
-            DT::DTOutput("boot_dt"),
+        
+        bslib::card(
+            textOutput("stressed_curve_scalar_value")
+        ),
+        
+        plotOutput("yield_curve_plot"),
+        plotOutput("pc_risk_plot"),
+        plotOutput("pc_pct_risk_plot"),
+        DT::DTOutput("boot_dt"),
             
         )
     )

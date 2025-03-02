@@ -101,12 +101,17 @@ DataFrame ai_df(DateVector date_c, IntegerVector mat_months, LogicalVector c) {
     date_1[i] = Date(y1, m1, d1);
     date_2[i] = Date(y2, m2, d2);
     
-    int dtm_next (((mat_months[i]-1) % 12) + 1);
-    int m_dtm (m_c + dtm_next);
+    int m_adj (((mat_months[i]-1) % 12) + 1);
+    int year_adj_dtm = (mat_months[i]-1)/12;
+    
+    
+    int m_dtm (m_c + m_adj);
     int y_dtm (y_c);
     
+    y_dtm = y_dtm + year_adj_dtm;
+    
     if(m_dtm > 12){
-      y_dtm = y_dtm + ((m_dtm - 1) / 12);
+      y_dtm = y_dtm + 1;
       m_dtm = ((m_dtm - 1) % 12) + 1;
     }
     
