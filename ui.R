@@ -36,39 +36,11 @@ bslib::page_navbar(
             textOutput("mono"),
             width = 800,
             
-            card(
-              card_header("Bond A data"),
-              fluidRow(
-                column(
-                  4,
-                  shiny::numericInput(
-                    "bondA_face_value",
-                    "Bond A Face Value",
-                    value = 100
-                  )
-              ),
-              column(
-                4,
-                shiny::numericInput(
-                "bondA_coupon_rate",
-                "Bond A Coupon Rate (%)",
-                value = 5
-                )
-              ),
-              column(
-                4,
-                shiny::dateInput(
-                  "bondA_maturity_date",
-                  "Bond A Maturity Date:",
-                  min = as.Date(ui_date_max),
-                  max = as.Date(ui_date_max + 365*30),
-                  value = as.Date(ui_date_max + 365)
-                )
-              )
-              ),
-              actionButton("addBond", "Add Bond")
-            ),
-            uiOutput("bondB_card")
+            actionButton("addBond", "Add Bond"),
+            actionButton("subBond", "Remove Bond"),
+            uiOutput("bond_inputs")
+            # Reactive Counter To Increase/Decrease Bonds
+              #https://www.youtube.com/watch?v=ML54auObmL8
         ),
             valueBoxOutput("portfolio_value_box"),
             plotOutput("yield_curve_plot"),

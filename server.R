@@ -158,58 +158,56 @@ server <- function(input, output, session) {
         
     })
     
+    #Reactive for bonds
+    num_bonds <- reactiveVal(1) #start with one
+    
     observeEvent(input$addBond, {
-      output$bondB_card <- renderUI({
+      num_bonds(num_bonds() + 1)
+    })
+    
+    observeEvent(input$subBond, {
+      num_bonds(max(num_bonds() - 1, 1))
+    })
+    
+    
+    # Change UI as we add bonds
+    
+    output$bond_inputs <- renderUI({
+      lapply(1:num_bonds(), function(i) {
         card(
-          card_header("Bond B data"),
+          card_header(paste0("bond", i)),
           fluidRow(
-            column(
-              4,
-          numericInput(
-            "BondB_face_value",
-            "Bond B Face Value",
-            value = input$bondA_face_value
+            column(4, numericInput(paste0("face_value_", i), "Face Value", value = 100)),
+            column(4, numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = 5)),
+            column(4, dateInput(paste0("maturity_date_", i), "Maturity Date", value = Sys.Date() + 365))
           )
-          ),
-          column(4,
-          numericInput(
-            "bondB_coupon_rate",
-            "Bond B Coupon Rate (%)",
-            value = input$bondA_coupon_rate
-          )
-          ),
-          column(4,
-          dateInput(
-            "bondB_maturity_date",
-            "Bond B Maturity date",
-            value = input$bondA_maturity_date
-          )
-          )
-        )
         )
       })
     })
     
+    
+
+    
     # Portfolio value
     
     output$portfolio_value_box <- shinydashboard::renderValueBox({
-      req(input$bondA_face_value,
-          input$bondA_coupon_rate,
-          input$bondA_maturity_date)
-      
+      req(num_bonds() > 0)
+      # sapply dynamically creates multiple inputs for each of the face values, coupon rates, and maturity dates
       bond_data <- tibble::tibble(
-        bond_id = c("Bond A"),
-        face_value = c(input$bondA_face_value),
-        coupon_rate = c(input$bondA_coupon_rate),
-        maturity_date = c(as.character(input$bondA_maturity_date))
+        bond_id = paste0("Bond ", 1:num_bonds()),
+        face_value = sapply(1:num_bonds(), function(i) input[[paste0("face_value_", i)]]),
+        coupon_rate = sapply(1:num_bonds(), function(i) input[[paste0("coupon_rate_", i)]]),
+        maturity_date = sapply(1:num_bonds(), function(i) as.character(input[[paste0("maturity_date_", i)]]))
       )
       
-      today <- as.character(Sys.Date())
+      today <- Sys.Date()
       
-      boot <- read_rds("boot.rds") # is this right???
+      boot <- read_rds("boot.rds")
       
       result <- price_portfolio(bond_data, today, boot)
+      
       print(result$bond_data)
+      
       portfolio_value <- result$portfolio_value
       
       formatted_value <- scales::dollar(portfolio_value)
@@ -334,3 +332,38 @@ server <- function(input, output, session) {
     
     
 }
+
+
+
+
+# observeEvent(input$addBond, {
+#   output$bondB_card <- renderUI({
+#     card(
+#       card_header("Bond B data"),
+#       fluidRow(
+#         column(
+#           4,
+#       numericInput(
+#         "BondB_face_value",
+#         "Bond B Face Value",
+#         value = input$bondA_face_value
+#       )
+#       ),
+#       column(4,
+#       numericInput(
+#         "bondB_coupon_rate",
+#         "Bond B Coupon Rate (%)",
+#         value = input$bondA_coupon_rate
+#       )
+#       ),
+#       column(4,
+#       dateInput(
+#         "bondB_maturity_date",
+#         "Bond B Maturity date",
+#         value = input$bondA_maturity_date
+#       )
+#       )
+#     )
+#     )
+#   })
+# })
