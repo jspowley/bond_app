@@ -191,15 +191,12 @@ server <- function(input, output, session) {
       })
     })
     
-    
-
-    
     # Portfolio value
     
     output$portfolio_value_box <- shinydashboard::renderValueBox({
       req(num_bonds() > 0)
       # sapply dynamically creates multiple inputs for each of the face values, coupon rates, and maturity dates
-      bond_data <- tibble::tibble(
+      bond_data <<- tibble::tibble(
         bond_id = paste0("Bond ", 1:num_bonds()),
         face_value = sapply(1:num_bonds(), function(i) input[[paste0("face_value_", i)]]),
         coupon_rate = sapply(1:num_bonds(), function(i) input[[paste0("coupon_rate_", i)]]),

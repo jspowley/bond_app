@@ -116,3 +116,6 @@ price_portfolio <- function(bond_data, today, boot_df) {
   )
 }
 
+get_bond_schedule <- function(bond_data){
+  
+}
