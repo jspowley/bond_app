@@ -221,6 +221,10 @@ server <- function(input, output, session) {
       print(str(bond_data()$face_value[1]))
       print(str(bond_data()$coupon_rate[1]))
       
+      print(head(bond_data()))
+      print(today)
+      print(head(boot))
+      
       if(!is.null(bond_data()$face_value[[1]]) & !is.null(bond_data()$coupon_rate[[1]])){
         boot <-  app_state$boot_stressed
         result <- price_portfolio(bond_data(), today, boot)
