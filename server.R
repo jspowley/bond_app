@@ -175,7 +175,7 @@ server <- function(input, output, session) {
     output$bond_inputs <- renderUI({
       lapply(1:num_bonds(), function(i) {
         card(
-          card_header(paste0("bond", i)),
+          card_header(paste0("Bond ", i)),
           fluidRow(
             column(4, numericInput(paste0("face_value_", i), "Face Value", value = 100)),
             column(4, numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = 5)),

@@ -2,8 +2,10 @@ library(facmodCS)
 library(moments)
 library(plotly)
 library(profvis)
+library(tidyverse)
 
 Rcpp::sourceCpp("bootstrap_optimized.cpp")
+source("accrued_interest_cpp.R")
 
 sample_size <- 10000
 
@@ -103,12 +105,17 @@ inter_yields <- sample_yields %>%
 # Getting AI Ratios, etc. Quite slow, may need optimization, but is still "bearable"
 input_date <- Sys.Date()
 
+print("Entering AI")
+
 yields_in <- inter_yields %>% 
-  dplyr::group_by(iter) %>% 
   dplyr::rename(term = fit_id, yield = fit) %>% 
   dplyr::mutate(term = as.numeric(term)) %>% 
-  ai_from_df(as_date(input_date)) %>% 
-  dplyr::ungroup() %>% 
+  dplyr::mutate(date_in = as_date(input_date)) %>%
+  ai_df_cpp()
+
+print("Post AI")
+
+yields_in <- yields_in %>% 
   dplyr::mutate(bs_group = term %% 6) %>% 
   dplyr::arrange(iter, bs_group, term) %>% 
   dplyr::mutate(price = 100 + 100*((1+yield/2)^ai-1),
@@ -126,20 +133,13 @@ reconcile_t_0 <- function(boot_df_in){
     dplyr::filter(term == 0) %>% 
     dplyr::mutate(
       
-      y2 = y2 - 1,
-      
-      date_2 = ifelse(
-        c,
-        lubridate::ceiling_date(as_date(paste0(y2,m2,"01"), format = "%Y%m%d"), "month"),
-        as_date(paste0(y2,m2,d), format = "%Y%m%d") + 1
-      ),
-      
+      date_2 = date_2 + 1,
       date_1 = date_1 + 1,
-      days_in = as.numeric(date_1 - date_2),
+      days_in = as.numeric(date_2 - date_1),
       days_through = days_in - 1,
       ai = (days_in - 1)/days_in,
       dtm = 1,
-      maturity = date_1,
+      maturity = date_2,
       final_t = 1,
       price = 100*((1+yield/2)^ai-1) + 100,
       dcf = price / ((yield/2)*100 + 100)
@@ -165,12 +165,20 @@ boot_dcf <- bootstrap(
 
 yields_in$dcf <- boot_dcf
 
-yields_in %>% 
+yields_in %>%
   reconcile_t_0() %>% 
   return()
 }
 
-test <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% bootstrap_cpp()
+profvis::profvis(
+  
+  test <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% 
+    bootstrap_cpp()
+    
+)
+
+
+test %>% bootstrap_cpp()
 
 interpolate_boot <- function(boot_df, portfolio_cf){
   
