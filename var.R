@@ -1,19 +1,24 @@
 library(facmodCS)
 library(moments)
 library(plotly)
+library(profvis)
 
-sample_size <- 10000
+Rcpp::sourceCpp("bootstrap_optimized.cpp")
 
-PCs <- readRDS("PCs.rds")
-deltas_in <- readRDS("deltas.rds")
-curve_in <- readRDS("yield_selected.rds")
+#sample_size <- 10000
 
-curve_in <- curve_in %>% data.frame()
+#PCs_in <- readRDS("PCs.rds")
+#deltas_in <- readRDS("deltas.rds")
+#curve_in <- readRDS("yield_selected.rds")
 
-yield_pc <- load_to_pc(curve_in, PCs)
+pca_sample_yields <- function(curve_in, deltas_in, PCs_in, sample_size){
+  
+  curve_in <- curve_in %>% data.frame()
 
-sample_deltas <- NULL
-descriptive_stats <- NULL
+  yield_pc <- load_to_pc(curve_in, PCs_in)
+
+  sample_deltas <- NULL
+  descriptive_stats <- NULL
 
 for(i in 1:ncol(deltas_in)){
   
@@ -85,7 +90,7 @@ for(i in 1:ncol(deltas_in)){
   }
 }
 
-sample_yields <- unload_pc(sample_deltas, PCs)
+sample_yields <- unload_pc(sample_deltas, PCs_in)
 
 # Interpolation stage on yield (bootstrap ready)
 inter_yields <- sample_yields %>% 
@@ -98,22 +103,83 @@ inter_yields <- sample_yields %>%
 # Getting AI Ratios, etc. Quite slow, may need optimization, but is still "bearable"
 input_date <- Sys.Date()
 
-yields_with_ai <- inter_yields %>% 
+yields_in <- inter_yields %>% 
   dplyr::group_by(iter) %>% 
   dplyr::rename(term = fit_id, yield = fit) %>% 
   dplyr::mutate(term = as.numeric(term)) %>% 
   ai_from_df(as_date(input_date)) %>% 
-  dplyr::ungroup()
-
-saveRDS(yields_with_ai, "sample_yields.rds")
-
-bs_ready <- yields_with_ai %>% 
+  dplyr::ungroup() %>% 
   dplyr::mutate(bs_group = term %% 6) %>% 
-  dplyr::arrange(term) %>% 
-  dplyr::group_by(bs_group) %>% 
-  dplyr::mutate(price = 100 + (100*yield/2) * ai,
+  dplyr::arrange(iter, bs_group, term) %>% 
+  dplyr::mutate(price = 100 + 100*((1+yield/2)^ai-1),
                 final_t = ceiling(term/2),
                 dcf = NA)
+
+  return(yields_in)
+}
+
+reconcile_t_0 <- function(boot_df_in){
+  
+  others <- boot_df_in %>% dplyr::filter(term > 0)
+  
+  t0s <- boot_df_in %>% 
+    dplyr::filter(term == 0) %>% 
+    dplyr::mutate(
+      
+      y2 = y2 - 1,
+      
+      date_2 = ifelse(
+        c,
+        lubridate::ceiling_date(as_date(paste0(y2,m2,"01"), format = "%Y%m%d"), "month"),
+        as_date(paste0(y2,m2,d), format = "%Y%m%d") + 1
+      ),
+      
+      date_1 = date_1 + 1,
+      days_in = as.numeric(date_1 - date_2),
+      days_through = days_in - 1,
+      ai = (days_in - 1)/days_in,
+      dtm = 1,
+      maturity = date_1,
+      final_t = 1,
+      price = 100*((1+yield/2)^ai-1) + 100,
+      dcf = price / ((yield/2)*100 + 100)
+      
+    )
+  
+  dplyr::bind_rows(others, t0s) %>% 
+    dplyr::arrange(iter, term) %>% 
+    return()
+}
+
+profvis::profvis(
+  pca_sample_yields(curve_in, deltas_in, PCs_in)
+)
+
+bootstrap_cpp <- function(yields_in){
+boot_dcf <- bootstrap(
+  iter = yields_in$iter,
+  term = yields_in$term,
+  bs_group = yields_in$bs_group,
+  yield = yields_in$yield,
+  price = yields_in$price,
+  dcf = yields_in$dcf,
+  r_count = nrow(yields_in)
+) %>% 
+  reconcile_t_0()
+
+yields_in$dcf <- boot_dcf
+return(yields_in)
+}
+
+#yields_in %>%
+#  reconcile_t_0() %>% 
+#  View()
+
+# saveRDS(yields_with_ai, "sample_yields.rds")
+
+ 
+
+
 # Running the zero curve bootstrap. 100% needs rcpp
 # Ouch, this is slow...
 

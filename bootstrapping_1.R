@@ -186,7 +186,7 @@ for(i in 0:5){
   d <- overnight$d
   date_2 <- ifelse(
     c,
-    lubridate::ceiling_date(as_date(paste0(y,m,d), format = "%Y%m%d"), "month"),
+    lubridate::ceiling_date(as_date(paste0(y,m,"01"), format = "%Y%m%d"), "month"),
     as_date(paste0(y,m,d), format = "%Y%m%d") + 1
   )
   date_1 <- date_1 + 1
