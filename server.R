@@ -204,7 +204,7 @@ server <- function(input, output, session) {
         maturity_date = c(as.character(input$bondA_maturity_date))
       )
       
-      today <- as.character(input$selected_yield)
+      today <- as.character(Sys.Date())
       
       boot <- read_rds("boot.rds") # is this right???
       
