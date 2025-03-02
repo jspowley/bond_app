@@ -33,10 +33,20 @@ df_mid <- ai_df(df_mid$y_in, df_mid$m_in, df_mid$d_in, df_mid$term, df_mid$c) %>
                     format = "%Y%m%d"
                   )
   ) %>% 
-  dplyr::select(date_1, date_2)
+  dplyr::mutate(maturity = 
+                  lubridate::as_date(
+                    paste0(
+                      year_dtm,
+                      sprintf("%02d", month_dtm),
+                      sprintf("%02d", day_dtm)
+                    ),
+                    format = "%Y%m%d")
+    )%>% 
+  dplyr::select(date_1, date_2, maturity)
 
 dplyr::bind_cols(df_in, df_mid) %>% 
   dplyr::mutate(days_in = as.numeric(date_2 - date_1),
                 days_through = as.numeric(date_in - date_1),
-                ai = days_through/days_in)
+                ai = days_through/days_in,
+                dtm = maturity - date_in)
                 

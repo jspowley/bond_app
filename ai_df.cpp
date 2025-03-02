@@ -13,6 +13,10 @@ DataFrame ai_df(IntegerVector year_c, IntegerVector month_c, IntegerVector day_c
   NumericVector day_d1 = index_length;
   NumericVector day_d2 = index_length;
   
+  NumericVector year_dtm = index_length;
+  NumericVector month_dtm = index_length;
+  NumericVector day_dtm = index_length;
+  
   std::unordered_set<int> thirty_one = {1, 3, 5, 7, 8, 10, 12};
   
   for(int i = 0; i < index_length; i++){
@@ -78,6 +82,38 @@ DataFrame ai_df(IntegerVector year_c, IntegerVector month_c, IntegerVector day_c
     day_d1[i] = d1;
     day_d2[i] = d2;
     
+    int dtm_next (((mat_months[i]-1) % 12) + 1);
+    int m_dtm (month_c[i] + dtm_next);
+    int y_dtm (year_c[i]);
+    
+    if(m_dtm > 12){
+      y_dtm = y_dtm + ((m_dtm - 1) / 12);
+      m_dtm = ((m_dtm - 1) % 12) + 1;
+    }
+    
+    int d_dtm (day_c[i]);
+    
+    if(c[i]){
+      if(thirty_one.count(m_dtm)){
+        d_dtm = 31;
+      }else{
+        d_dtm = 30;
+      }
+    }else{
+      d_dtm = d;
+    }
+    
+    if(m_dtm == 2){
+      int bound = (y_dtm % 4) > 0;
+      if(d_dtm > (29 - bound)){
+        d_dtm = 29 - bound;
+      }
+    }
+    
+    year_dtm[i] = y_dtm;
+    month_dtm[i] = m_dtm;
+    day_dtm[i] = d_dtm;
+    
   }
   
   return DataFrame::create(
@@ -87,6 +123,10 @@ DataFrame ai_df(IntegerVector year_c, IntegerVector month_c, IntegerVector day_c
     Named("day_d1") = day_d1,
     Named("year_d2") = year_d2,
     Named("month_d2") = month_d2,
-    Named("day_d2") = day_d2
+    Named("day_d2") = day_d2,
+    Named("year_dtm") = year_dtm,
+    Named("month_dtm") = month_dtm,
+    Named("day_dtm") = day_dtm
+    
   );
 }
