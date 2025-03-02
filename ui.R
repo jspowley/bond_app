@@ -10,6 +10,7 @@
 library(shiny)
 library(bslib)
 library(lubridate)
+library(shinydashboard)
 
 # Define UI for application that draws a histogram
 bslib::page_navbar(
