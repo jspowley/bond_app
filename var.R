@@ -170,15 +170,16 @@ yields_in %>%
   return()
 }
 
-profvis::profvis(
+#profvis::profvis(
   
-  test <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% 
+  test2 <- pca_sample_yields(curve_in, deltas_in, PCs_in, 10000) %>% 
     bootstrap_cpp()
     
-)
+#)
 
+#test %>% reconcile_t_0() %>% View()
 
-test %>% bootstrap_cpp()
+#test %>% bootstrap_cpp()
 
 interpolate_boot <- function(boot_df, portfolio_cf){
   
