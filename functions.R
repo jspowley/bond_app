@@ -63,58 +63,66 @@ fit_h_spline <- function(x, y, missing){
 }
 
 
-price_portfolio <- function(bond_data, today, boot_df) {
-  today_parsed <- lubridate::ymd(today)
-  ## Inner function
-  price_bond <- function(face_value, coupon_rate, maturity_date) {
-    
-    maturity_date_parsed <- lubridate::ymd(maturity_date)
-    
-    cf_dates <- seq.Date(from = maturity_date_parsed, to = today_parsed, by = "-6 months") %>%
-      tibble::as_tibble() %>%
-      rename(date = value) %>%
-      mutate(
-        cf = dplyr::if_else(
-          date == maturity_date_parsed,
-          ## Final coupon and princ payment
-          face_value + ((coupon_rate * face_value / 100) / 2),
-          (coupon_rate * face_value / 100) / 2
-        ),
-        dtm = as.numeric(date - today_parsed)
-      ) %>%
-      arrange(date)
-    
-    ## DCF Interpolation
-    strap_df <- tibble::as_tibble(
-      fit_h_spline(
-        x = boot_df$dtm,
-        y = boot_df$dcf,
-        missing = cf_dates$dtm
-      )
-    ) %>%
-      mutate(dtm = cf_dates$dtm) %>%
-      rename(dcf = value)
-    
-    cf_dates <- cf_dates %>%
-      left_join(strap_df, by = "dtm") %>%
-      mutate(pv = dcf * cf)
-    
-    bond_value <- sum(cf_dates$pv, na.rm = TRUE)
-    return(bond_value)
-  }
-  ## perform inner bond pricing with rowwise function
-  bond_data <- bond_data %>%
-    rowwise() %>%
-    mutate(bond_value = price_bond(face_value, coupon_rate, maturity_date)) %>%
-    ungroup()
-  
-  portfolio_value <- sum(bond_data$bond_value, na.rm = TRUE)
-  
-  list(
-    bond_data = bond_data,
-    portfolio_value = portfolio_value
-  )
-}
+#price_portfolio <- function(bond_data, today, boot_df) {
+#  today_parsed <- lubridate::ymd(today)
+#  ## Inner function
+##  price_bond <- function(face_value, coupon_rate, maturity_date, boot_df) {
+#    
+#    maturity_date_parsed <- lubridate::ymd(maturity_date)
+#    
+#    cf_dates <- seq.Date(from = maturity_date_parsed, to = today_parsed, by = "-6 months") %>%
+#      tibble::as_tibble() %>%
+#      rename(date = value) %>%
+#      mutate(
+#        cf = dplyr::if_else(
+#          date == maturity_date_parsed,
+#          ## Final coupon and princ payment
+#          face_value + ((coupon_rate * face_value / 100) / 2),
+##          (coupon_rate * face_value / 100) / 2
+##        ),
+#        dtm = as.numeric(date - today_parsed)
+#      ) %>%
+#      arrange(date)
+#    
+#    print("boot df")
+#    print(head(boot_df))
+#    
+#    ## DCF Interpolation
+#    strap_df <- tibble::as_tibble(
+#      fit_h_spline(
+#        x = boot_df$dtm,
+#        y = boot_df$dcf,
+#        missing = cf_dates$dtm
+#      )
+#    ) %>%
+#      mutate(dtm = cf_dates$dtm) %>%
+#      rename(dcf = value)
+#    
+#    cf_dates <- cf_dates %>%
+#      left_join(strap_df, by = "dtm") %>%
+#      mutate(pv = dcf * cf)
+#    
+#    bond_value <- sum(cf_dates$pv, na.rm = TRUE)
+#    return(bond_value)
+#  }
+#  ## perform inner bond pricing with rowwise function
+#  print("column names")
+#  print(colnames(bond_data))
+#  
+#  print(head(bond_data))
+#  
+#  bond_data <- bond_data %>%
+#    rowwise() %>%
+#    mutate(bond_value = price_bond(face_value, coupon_rate, lubridate::as_date(maturity_date, format = "%Y-%m-%d")), boot_df) %>%
+#    ungroup()
+#  
+#  portfolio_value <- sum(bond_data$bond_value, na.rm = TRUE)
+#  
+#  list(
+#    bond_data = bond_data,
+#    portfolio_value = portfolio_value
+#  )
+#}
 
 #get_bond_schedule <- function(bond_data){
 #  
@@ -126,5 +134,95 @@ price_portfolio <- function(bond_data, today, boot_df) {
 #  
 #}
 
+bond_inputs <- readRDS("bond_inputs.rds")
+
+cf_schedule <- function(bond_in, date_in){
+  
+  output_cf <- c()
+  output_dates <- c()
+  
+  for(r in 1:nrow(bond_in)){
+
+    ref <- lubridate::as_date(bond_in$maturity_date[r], format = "%Y-%m-%d")
+    ref_floating <- ref
+    
+    m_back <- 0
+    
+    out_cf <- c(bond_in$coupon_rate[r]*bond_in$face_value[r]/200 + bond_in$face_value[r])
+    out_dates <- c(ref) 
+    
+    ceil <- ref == lubridate::ceiling_date(ref, "month") - 1
+    m_offset <- 6
+    
+    while(ref_floating > date_in){
+      
+      d <- lubridate::day(ref)
+      m <- lubridate::month(ref)
+      y <- lubridate::year(ref)
+      
+      # print(paste(y,m,d))
+      
+      m <- m - ((m_offset - 1) %% 12 + 1)
+      y_adj <- floor((m_offset - 1)/12)
+      
+      y <- y - y_adj
+      
+      if(m < 1){
+        m <- m + 12
+        y <- y - 1
+      }
+      
+      # print(y)
+      # print(m)
+      
+      if(ceil){
+        
+        print("Ceiling")
+        
+        ref_new <- as_date(paste0(
+          y,
+          sprintf("%02d", m),
+          "01"
+        ),
+        format = "%Y%m%d") %>% 
+          lubridate::ceiling_date("month") - 1
+        
+      }else{
+        
+        # print("Regular")
+      
+        if(m == 2 & d > 28){
+          adj <- (y %% 4) == 0
+          d <- 28 + adj
+        }
+        
+        ref_new <- as_date(paste0(
+          y,
+          sprintf("%02d", m),
+          sprintf("%02d", d)),
+          format = "%Y%m%d")
+        
+      }
+      
+      # print(paste(y,m,d))
+      
+      out_cf <- append(out_cf, bond_in$coupon_rate[r]*bond_in$face_value[r]/200)
+      out_dates <- append(out_dates, ref_new)
+      
+      m_offset <- m_offset + 6
+      # print(str(ref_new))
+      ref_floating <- ref_new
+    }
+    
+    output_cf <- append(output_cf, out_cf)
+    output_dates <- append(output_dates, out_dates)
+    
+  }
+  
+  output <- data.frame(date = output_dates, cf = output_cf)
+  return(output)
+}
+
+# cf_schedule(bond_inputs, Sys.Date()) %>% View()
 #bond_data <- readRDS("bond_data.rds")
 #get_bond_schedule(bond_data)

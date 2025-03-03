@@ -218,21 +218,47 @@ server <- function(input, output, session) {
       
       today <- Sys.Date()
       
-      print(str(bond_data()$face_value[1]))
-      print(str(bond_data()$coupon_rate[1]))
+      # print(str(bond_data()$face_value[1]))
+      # print(str(bond_data()$coupon_rate[1]))
       
-      print(head(bond_data()))
-      print(today)
-      print(head(boot))
+      # print(head(bond_data()))
+      # print(today)
+      # print(head(boot))
       
-      if(!is.null(bond_data()$face_value[[1]]) & !is.null(bond_data()$coupon_rate[[1]])){
+      # print("filtering")
+      
+      saveRDS(bond_data(), "bond_inputs_2.rds")
+      
+      bond_data_in <- bond_data() %>% 
+        tidyr::unnest(face_value) %>% 
+        tidyr::unnest(coupon_rate) %>% 
+        tidyr::unnest(maturity_date)
+      
+      # print(bond_data_in)
+      
+      if(nrow(bond_data_in > 0)){
+        
         boot <-  app_state$boot_stressed
-        result <- price_portfolio(bond_data(), today, boot)
-        portfolio_value <- result$portfolio_value
-        formatted_value <- scales::dollar(portfolio_value)
-        output$stressed_curve_scalar_value <- renderText(
-          {formatted_value}
-        )
+        cf_bonds <- bond_data_in %>% cf_schedule(Sys.Date())
+        
+        # saveRDS(bond_data_in, "bond_inputs.rds")
+        # saveRDS(cf_bonds, "bond_schedule.rds")
+        
+        #inter_bootstrap <- interpolation_function(cf_schedule, zero_curve)
+        
+        #pv1 <- cf_schedule %>% pv_function(bootstrap_df_normal)
+        #pv2 <- cf_schedule %>% pv_function(bootstrap_df_stressed)
+        
+        #output$output_price <- renderText(sum_function(pv1))
+        #sum_function(pv2)
+        
+        #result <- price_portfolio(bond_data(), today, boot)
+        #portfolio_value <- result$portfolio_value
+        #formatted_value <- scales::dollar(portfolio_value)
+        #output$stressed_curve_scalar_value <- renderText(
+        #  {formatted_value}
+        
+        #)
       }
       
     })
