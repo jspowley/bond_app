@@ -45,11 +45,15 @@ server <- function(input, output, session) {
     
     output$stressed_curve_scalar_value <- renderUI({
       value_box(title = "Test Case:",
-                value = 0)})
+                value = paste0("$ ",0))})
     
     output$current_curve_scalar_value <- renderUI({
       value_box(title = "Current Value:",
-                value = 0)})
+                value = paste0("$ ",0))})
+    
+    output$pct_chg <- renderUI({
+      value_box(title = "Percent Change:",
+                value = paste0(0, "%"))})
     
     observeEvent(list(input$training_range, input$delta_lag),{
         
@@ -136,7 +140,8 @@ server <- function(input, output, session) {
                labs(title = "Yield Curve Stress Testing", x = "Term (Months)", y = "Yield (%)") +
                # scale_x_continuous(breaks = df$TermNum, labels = df$Term) +
                scale_color_manual(values = c("Base Curve" = "black", "Stressed Curve" = "red")) +
-               theme_minimal()})
+               theme_minimal() +
+            theme(legend.position = "none")})
         
         # print(df)
         h_spline_stressed <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
@@ -271,12 +276,44 @@ server <- function(input, output, session) {
 
         output$stressed_curve_scalar_value <- renderUI({
           value_box(title = "Test Case:",
-                    value = round(sum(stressed_pv$pv), 2))})
+                    value = paste0("$ ",round(sum(stressed_pv$pv), 2)))})
         
         output$current_curve_scalar_value <- renderUI({
           value_box(title = "Current Value:",
-                    value = round(sum(current_pv$pv), 2))})
+                    value = paste0("$ ",round(sum(current_pv$pv), 2)))})
+        
+        output$pct_chg <- renderUI({
+          value_box(title = "Percent Change:",
+                    value = paste0(round(
+                      100*(sum(stressed_pv$pv) - sum(current_pv$pv))/sum(current_pv$pv), 2), "%"))})
           
+        output$multi_plot <- 
+          
+          renderPlot({
+            
+          dplyr::left_join(
+          current_pv %>% dplyr::transmute(date, dtm, cf, pv_1 = pv),
+          stressed_pv %>% dplyr::transmute(dtm, pv_2 = pv),
+          by = "dtm"
+        ) %>% 
+          dplyr::mutate(d_pv = (pv_2 - pv_1)/pv_1) %>% 
+          dplyr::mutate(weight = (pv_2 - pv_1)/sum(pv_1)) %>% 
+          dplyr::select(date, cf, pv_1, d_pv, weight) %>% 
+          tidyr::pivot_longer(-date) %>% 
+          dplyr::mutate(name = dplyr::case_when(
+            name == "cf" ~ "Cash Flow",
+            name == "pv_1" ~ "Present Value",
+            name == "d_pv" ~ "Percent Change in PV",
+            name == "weight" ~ "Relative Weighting"
+          ),
+          name = factor(name, levels = c("Cash Flow", "Present Value", "Percent Change in PV", "Relative Weighting"))) %>% 
+          ggplot() +
+          geom_col(aes(x = date, y = value), width = 30) +
+          facet_grid(name~., scales = "free_y") +
+          labs(x = "Date", y = "Value")
+            
+          })
+        
         print(sum(stressed_pv$pv))
         
         # Interpolate zero curve (s)

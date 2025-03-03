@@ -28,11 +28,11 @@ bslib::page_navbar(
             
             card(card_header("Scenario, (Z Score)"),
             sliderInput("parallel_shift", "Level Factor",
-                        min = -4, max = 4, value = 0, step = 0.01),
+                        min = -4, max = 4, value = 0, step = 0.05),
             sliderInput("steepening", "Steepening Factor",
-                        min = -4, max = 4, value = 0, step = 0.01),
+                        min = -4, max = 4, value = 0, step = 0.05),
             sliderInput("curvature", "Curvature Factor",
-                        min = -4, max = 4, value = 0, step = 0.01)),
+                        min = -4, max = 4, value = 0, step = 0.05)),
             textOutput("mono"),
             width = 800,
             
@@ -49,10 +49,12 @@ bslib::page_navbar(
             
         uiOutput("current_curve_scalar_value"),
         uiOutput("stressed_curve_scalar_value"),
+        uiOutput("pct_chg"),
         
-        plotOutput("pc_risk_plot"),
-        plotOutput("pc_pct_risk_plot"),
-        DT::DTOutput("boot_dt"),
+        bslib::card(
+            plotOutput("multi_plot"),
+            full_screen = TRUE
+        ),
         
         col_widths = c(12,4,4,4)
         )
