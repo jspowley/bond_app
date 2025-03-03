@@ -43,13 +43,19 @@ bslib::page_navbar(
               #https://www.youtube.com/watch?v=ML54auObmL8
         ),
         
+        bslib::layout_columns(
+        
+        bslib::card(plotOutput("yield_curve_plot")),
+            
         uiOutput("current_curve_scalar_value"),
         uiOutput("stressed_curve_scalar_value"),
         
-        plotOutput("yield_curve_plot"),
         plotOutput("pc_risk_plot"),
         plotOutput("pc_pct_risk_plot"),
         DT::DTOutput("boot_dt"),
+        
+        col_widths = c(12,4,4,4)
+        )
             
         )
     )
