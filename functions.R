@@ -134,7 +134,7 @@ fit_h_spline <- function(x, y, missing){
 #  
 #}
 
-bond_inputs <- readRDS("bond_inputs.rds")
+# bond_inputs <- readRDS("bond_inputs.rds")
 
 cf_schedule <- function(bond_in, date_in){
   
@@ -224,10 +224,15 @@ cf_schedule <- function(bond_in, date_in){
 }
 
 
-interpolate_zeros <- function(boot_df_in, cf_data_in){
-  fit_h_spline(x = boot_df_in$dtm, y = boot_df_in$dcf, missing = cf_data_in$dtm)
+interpolate_and_price <- function(boot_df_in, cf_data_in){
+  fit_h_spline(x = boot_df_in$dtm, y = boot_df_in$dcf, missing = cf_data_in$dtm) %>% 
+    data.frame(dtm = as.numeric(names(.)), dcf = .) %>% 
+    right_join(cf_data_in, by = "dtm") %>% 
+    dplyr::mutate(pv = cf * dcf) %>% 
+    return()
 }
 
 cf_data <- readRDS("cf_schedule.rds") %>% dplyr::mutate(dtm = as.numeric(date - Sys.Date()))
+boot_df <- readRDS("dcf_start.rds")
 
-interpolate_zeros(boot_df, cf_data)
+interpolate_and_price(boot_df, cf_data)

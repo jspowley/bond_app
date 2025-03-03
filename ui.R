@@ -43,9 +43,7 @@ bslib::page_navbar(
               #https://www.youtube.com/watch?v=ML54auObmL8
         ),
         
-        bslib::card(
-            textOutput("stressed_curve_scalar_value")
-        ),
+        uiOutput("stressed_curve_scalar_value"),
         
         plotOutput("yield_curve_plot"),
         plotOutput("pc_risk_plot"),

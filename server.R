@@ -43,6 +43,10 @@ server <- function(input, output, session) {
     pc_deltas_sd <- NULL
     app_state$init <- NULL
     
+    output$stressed_curve_scalar_value <- renderUI({
+      value_box(title = "Test Case:",
+                value = 0)})
+    
     observeEvent(list(input$training_range, input$delta_lag),{
         
         req(input$training_range)
@@ -185,8 +189,8 @@ server <- function(input, output, session) {
         card(
           card_header(paste0("Bond ", i)),
           fluidRow(
-            column(4, numericInput(paste0("face_value_", i), "Face Value", value = 100)),
-            column(4, numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = 5)),
+            column(4, numericInput(paste0("face_value_", i), "Face Value", value = NA)),
+            column(4, numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = NA)),
             column(4, dateInput(paste0("maturity_date_", i), "Maturity Date", value = Sys.Date() + 365))
           )
         )
@@ -212,8 +216,8 @@ server <- function(input, output, session) {
       
     )
     
-    observeEvent(bond_data(), {
-      print("This shit doesn't work")
+    observeEvent(list(bond_data(), app_state$boot_stressed), {
+
       print(bond_data())
       
       today <- Sys.Date()
@@ -232,16 +236,18 @@ server <- function(input, output, session) {
       bond_data_in <- bond_data() %>% 
         tidyr::unnest(face_value) %>% 
         tidyr::unnest(coupon_rate) %>% 
-        tidyr::unnest(maturity_date)
+        tidyr::unnest(maturity_date) %>% 
+        dplyr::filter(
+          !is.na(face_value) & !is.na(coupon_rate) & !is.na(maturity_date)
+          )
       
       print(bond_data_in)
       
       if(nrow(bond_data_in > 0)){
         
-        date_in <- Sys.Date()
+        req(app_state$boot_stressed)
         
-        print("triggered sch")
-        boot <-  app_state$boot_stressed
+        date_in <- Sys.Date()
         
         cf_bonds <- bond_data_in %>% cf_schedule(date_in) %>% 
           dplyr::group_by(date) %>% 
@@ -249,8 +255,13 @@ server <- function(input, output, session) {
           dplyr::mutate(dtm = as.numeric(date - date_in)) %>% 
           dplyr::filter(date > date_in)
         
-        print(cf_bonds)
-        saveRDS(cf_bonds, "cf_schedule.rds")
+        stressed_pv <- interpolate_and_price(app_state$boot_stressed, cf_bonds)
+
+        output$stressed_curve_scalar_value <- renderUI({
+          value_box(title = "Test Case:",
+                    value = round(sum(stressed_pv$pv), 2))})
+          
+        print(sum(stressed_pv$pv))
         
         # Interpolate zero curve (s)
         
