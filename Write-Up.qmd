@@ -1,0 +1,59 @@
+# About (tab 1)
+
+The purpose of this application is to provide use to portfolio managers in making investment decisions, especially as it relates to how the value of bond portfolios change with respect to hypothetical changes in underlying interest rates. Through the use of this app, a manager is able to combine their knowledge on fixed income with descriptive and prescriptive analytics to optimize their decision-making.
+
+**\[name of tab 2\]** provides historical context on key areas of interest including the par yield curve, a bootstrapped spot yield curve which uses a monotonic cubic spline for interpolation, and **\[what else should we put here if anything?\]**
+
+Tab 3 implements a principle component analysis (PCA) to capture historical bond yield co-dynamics which are of use for transforming speculative narrative into actionable insights. Included in the main panel is as follows:
+
+-   A par yield curve pulled in real time from the U.S. Treasury
+
+    -   Includes both today's yield curve, as well as a hypothetical "stressed" yield curve which is manipulated via inputs in the side panel
+
+-   The portfolio's value today, as well as a hypothetical value (the *stressed* value) which accounts for changes in the yield curve derived by input
+
+-   A time-series overview of future cash flows to visualize timing and magnitude of cash flows
+
+    -   Also included is a chart which shows how cash flow present values vary relative to today's yield curve after manipulating today's yield curve with input data
+
+A side panel contains all major inputs for the dashboard:
+
+-   Use the slider to train the model over periods with market dynamics that you expect to align best with your forecasting narrative. If in doubt, maximize the slider range.
+
+-   There are three inputs which manipulate today's yield curve:
+
+```{r, echo=FALSE, warning=FALSE}
+
+library(knitr)
+
+
+yield_curve_table <- data.frame(
+  Principal_Component = c("PC1: Level Shift", "PC2: Slope Shift", "PC3: Curvature Shift"),
+  Meaning = c("Parallel shift", "Steepening or flattening", "Mid-curve movement"),
+  Effect_on_Yield_Curve = c(
+    "All yields rise or fall together",
+    "Short- and long-term rates move in opposite directions",
+    "Medium-term rates move more than short- and long-term rates"
+  ),
+  Typical_Economic_Scenario = c(
+    "Broad monetary easing or tightening",
+    "Expectations of rate hikes or cuts",
+    "Policy uncertainty or cyclical shifts"
+  ),
+  stringsAsFactors = FALSE
+)
+
+
+colnames(yield_curve_pca) <- c("Principal Component", "Meaning", "Effect on Yield Curve", "Typical Economic Scenario")
+
+
+kable(yield_curve_pca, caption = "Yield Curve PCA Summary")
+
+
+
+
+```
+
+-   Inputs for your portfolio, with buttons to add/remove bonds. Inputs are face value, coupon rate, and maturity date. This results in a calculated portfolio value based upon the bootstrap both for today's yield curve, as well as for the stressed yield curve
+
+By inputting the PM's current bond portfolio and varying the principle components to match expectations on future interest rates, the manager will be able to formulate a strategy which best aligns with their narrative. For instance, if the model shows yields will increase for long-term bonds and decrease for short term bonds, the PM should short or decrease allocation to long-term bonds, and long or increase allocation to short-term bonds.
