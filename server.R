@@ -234,12 +234,27 @@ server <- function(input, output, session) {
         tidyr::unnest(coupon_rate) %>% 
         tidyr::unnest(maturity_date)
       
-      # print(bond_data_in)
+      print(bond_data_in)
       
       if(nrow(bond_data_in > 0)){
         
+        date_in <- Sys.Date()
+        
+        print("triggered sch")
         boot <-  app_state$boot_stressed
-        cf_bonds <- bond_data_in %>% cf_schedule(Sys.Date())
+        
+        cf_bonds <- bond_data_in %>% cf_schedule(date_in) %>% 
+          dplyr::group_by(date) %>% 
+          dplyr::summarise(cf = sum(cf), .groups = "keep") %>% 
+          dplyr::mutate(dtm = as.numeric(date - date_in)) %>% 
+          dplyr::filter(date > date_in)
+        
+        print(cf_bonds)
+        saveRDS(cf_bonds, "cf_schedule.rds")
+        
+        # Interpolate zero curve (s)
+        
+        # Price
         
         # saveRDS(bond_data_in, "bond_inputs.rds")
         # saveRDS(cf_bonds, "bond_schedule.rds")

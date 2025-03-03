@@ -223,6 +223,11 @@ cf_schedule <- function(bond_in, date_in){
   return(output)
 }
 
-# cf_schedule(bond_inputs, Sys.Date()) %>% View()
-#bond_data <- readRDS("bond_data.rds")
-#get_bond_schedule(bond_data)
+
+interpolate_zeros <- function(boot_df_in, cf_data_in){
+  fit_h_spline(x = boot_df_in$dtm, y = boot_df_in$dcf, missing = cf_data_in$dtm)
+}
+
+cf_data <- readRDS("cf_schedule.rds") %>% dplyr::mutate(dtm = as.numeric(date - Sys.Date()))
+
+interpolate_zeros(boot_df, cf_data)
