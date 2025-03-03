@@ -43,6 +43,7 @@ bslib::page_navbar(
               #https://www.youtube.com/watch?v=ML54auObmL8
         ),
         
+        uiOutput("current_curve_scalar_value"),
         uiOutput("stressed_curve_scalar_value"),
         
         plotOutput("yield_curve_plot"),

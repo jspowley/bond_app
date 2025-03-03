@@ -47,6 +47,10 @@ server <- function(input, output, session) {
       value_box(title = "Test Case:",
                 value = 0)})
     
+    output$current_curve_scalar_value <- renderUI({
+      value_box(title = "Current Value:",
+                value = 0)})
+    
     observeEvent(list(input$training_range, input$delta_lag),{
         
         req(input$training_range)
@@ -108,9 +112,9 @@ server <- function(input, output, session) {
         current_pca <- load_to_pc(current_yield, PCs)
         
         df <- data.frame(
-        Term = colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric(),
-        Base = as.numeric(current_yield),
-        Stressed = stressed_curve
+          Term = colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric(),
+          Base = as.numeric(current_yield),
+          Stressed = stressed_curve
         )
         
         # df$TermNum <- as.numeric(gsub("T", "", df$Term))
@@ -135,30 +139,37 @@ server <- function(input, output, session) {
                theme_minimal()})
         
         # print(df)
-        h_spline <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
-        saveRDS(h_spline, "yield_curve.rds")
+        h_spline_stressed <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Stressed), missing = 0:360)
         
-        boot_df <- h_spline %>% 
+        boot_df_stressed <- h_spline_stressed %>% 
             data.frame(term = as.numeric(names(.)), yield = .) %>% 
-            #dplyr::rowwise() %>% 
-            #dplyr::mutate(yield = max(yield, 0)) %>% 
-            #dplyr::ungroup() %>% 
-            # ai_from_df(date_in = input$selected_yield) %>% 
             dplyr::mutate(
               date_in = input$selected_yield) %>% 
-            #  date_in = as_date(input_date)) %>%
             ai_df_cpp() %>% 
           dplyr::mutate(iter = 1) %>% 
             prep_ai_for_bs() %>% 
             bootstrap_cpp()
         
-        app_state$boot_stressed <- boot_df
+        app_state$boot_stressed <- boot_df_stressed
+        
+        h_spline_current <- fit_h_spline(x = as.numeric(df$Term), y = as.numeric(df$Base), missing = 0:360)
+        
+        boot_df_current <- h_spline_current %>% 
+          data.frame(term = as.numeric(names(.)), yield = .) %>% 
+          dplyr::mutate(
+            date_in = input$selected_yield) %>% 
+          ai_df_cpp() %>% 
+          dplyr::mutate(iter = 1) %>% 
+          prep_ai_for_bs() %>% 
+          bootstrap_cpp()
+        
+        app_state$boot_current <- boot_df_current
+        
+        
         
         output$boot_dt <- renderDT({
             boot_df
         })
-        
-        saveRDS(boot_df, "Final Pricing Startpoint/boot.rds")
         
         mono <- boot_df %>% dplyr::mutate(x = 1, x = cumsum(x)) %>% 
             dplyr::arrange(desc(dcf)) %>% 
@@ -256,10 +267,15 @@ server <- function(input, output, session) {
           dplyr::filter(date > date_in)
         
         stressed_pv <- interpolate_and_price(app_state$boot_stressed, cf_bonds)
+        current_pv <- interpolate_and_price(app_state$boot_current, cf_bonds)
 
         output$stressed_curve_scalar_value <- renderUI({
           value_box(title = "Test Case:",
                     value = round(sum(stressed_pv$pv), 2))})
+        
+        output$current_curve_scalar_value <- renderUI({
+          value_box(title = "Current Value:",
+                    value = round(sum(current_pv$pv), 2))})
           
         print(sum(stressed_pv$pv))
         
