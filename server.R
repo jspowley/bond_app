@@ -351,7 +351,7 @@ server <- function(input, output, session) {
       labs(x = "PV Simulated", y = "Density")
       })
     
-    print(var_set$pv %>% quantile(probs = 0.05))
+    output$var5 <- renderText(paste0("$ ",var_set$pv %>% quantile(probs = 0.05)))
     
     })
     
