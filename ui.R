@@ -38,7 +38,10 @@ bslib::page_navbar(
             
             actionButton("addBond", "Add Bond"),
             actionButton("subBond", "Remove Bond"),
-            uiOutput("bond_inputs")
+            uiOutput("bond_inputs"),
+            shiny::numericInput("s_size", "Value at Risk Sample Size", value = 10000),
+            shiny::actionButton("run_var", "Run Value at Risk"),
+            shiny::plotOutput("var_plot")
             # Reactive Counter To Increase/Decrease Bonds
               #https://www.youtube.com/watch?v=ML54auObmL8
         ),

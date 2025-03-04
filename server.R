@@ -75,11 +75,18 @@ server <- function(input, output, session) {
         
         pca_result <- prcomp(yield_matrix_centered, center = FALSE, scale. = TRUE)
         PCs <<- pca_result$rotation
-        saveRDS(PCs, "PCs.rds")
+        
+        app_state$rot_matrix <- PCs
+        
+        # saveRDS(PCs, "PCs.rds")
         
         pc_historical <<- load_to_pc(yield_matrix_centered, PCs)
         pc_deltas_historical <<- deltas(pc_historical, input$delta_lag)
-        saveRDS(pc_deltas_historical, "deltas.rds")
+        
+        app_state$delta_historical <- pc_deltas_historical
+        # print(app_state$delta_historical)
+        
+        # saveRDS(pc_deltas_historical, "deltas.rds")
         
         pc_deltas_sd <<- pc_deltas_historical %>% 
             dplyr::summarize(dplyr::across(dplyr::any_of(colnames(pc_deltas_historical)),sd))
@@ -104,7 +111,9 @@ server <- function(input, output, session) {
         
         stress <- unload_pc(pcs, PCs) %>% as.vector() %>% unlist()
         current_yield <- treasury_data_server %>% filter(date <= input$selected_yield) %>% filter(date == max(date)) %>% select(-date)
-        saveRDS(current_yield, "yield_selected.rds")
+        app_state$current_yield <- current_yield
+        
+        # saveRDS(current_yield, "yield_selected.rds")
    
         stressed_curve <- as.numeric(current_yield) + stress
         
@@ -234,7 +243,7 @@ server <- function(input, output, session) {
     
     observeEvent(list(bond_data(), app_state$boot_stressed), {
 
-      print(bond_data())
+      # print(bond_data())
       
       today <- Sys.Date()
       
@@ -257,7 +266,7 @@ server <- function(input, output, session) {
           !is.na(face_value) & !is.na(coupon_rate) & !is.na(maturity_date)
           )
       
-      print(bond_data_in)
+      # print(bond_data_in)
       
       if(nrow(bond_data_in > 0)){
         
@@ -314,32 +323,36 @@ server <- function(input, output, session) {
             
           })
         
-        print(sum(stressed_pv$pv))
+        app_state$cf_schedule <- cf_bonds
         
-        # Interpolate zero curve (s)
+        # print(sum(stressed_pv$pv))
         
-        # Price
-        
-        # saveRDS(bond_data_in, "bond_inputs.rds")
-        # saveRDS(cf_bonds, "bond_schedule.rds")
-        
-        #inter_bootstrap <- interpolation_function(cf_schedule, zero_curve)
-        
-        #pv1 <- cf_schedule %>% pv_function(bootstrap_df_normal)
-        #pv2 <- cf_schedule %>% pv_function(bootstrap_df_stressed)
-        
-        #output$output_price <- renderText(sum_function(pv1))
-        #sum_function(pv2)
-        
-        #result <- price_portfolio(bond_data(), today, boot)
-        #portfolio_value <- result$portfolio_value
-        #formatted_value <- scales::dollar(portfolio_value)
-        #output$stressed_curve_scalar_value <- renderText(
-        #  {formatted_value}
-        
-        #)
       }
       
+    })
+    
+    observeEvent(input$run_var, {
+      
+    y_in <- app_state$current_yield
+    r_in <- app_state$rot_matrix
+    d_in <- app_state$delta_historical
+    s_size <- input$s_size
+    cfs_in <- app_state$cf_schedule
+    
+    var_set <- pca_sample_yields(y_in, d_in, r_in, s_size) %>% 
+      bootstrap_cpp() %>% 
+      interpolate_boot_var(cfs_in)
+    
+    output$var_plot <- 
+      renderPlot({
+      var_set %>% 
+      ggplot() +
+      geom_histogram(aes(x = pv, y = ..count../sum(..count..)), bins = 100) +
+      labs(x = "PV Simulated", y = "Density")
+      })
+    
+    print(var_set$pv %>% quantile(probs = 0.05))
+    
     })
     
     # IMPORTANT CODE BELOW
