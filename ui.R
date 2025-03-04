@@ -14,18 +14,19 @@ library(shinydashboard)
 
 # Define UI for application that draws a histogram
 ui <- bslib::page_navbar(
-    title = "Yield Curve Scenario Analysis",
+    title = "Portfolio Management Dashboard",
     theme = bs_theme(bootswatch = "flatly"),
     
+    
     nav_panel(
-      title = "Tab 1",
+      title = "About",
       fluidPage(
         h2("Welcome"),
         p("Insert content here for tab 1.")
       )
     ),
       
-    nav_panel(title = "Tab 2",
+    nav_panel(title = "Sensitivity Analysis",
               bslib::layout_sidebar(
                 sidebar = sidebar(
                   
