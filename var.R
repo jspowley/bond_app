@@ -191,7 +191,44 @@ yields_in %>%
 
 #test %>% bootstrap_cpp()
 
-interpolate_boot <- function(boot_df, portfolio_cf){
+#missing_cfs <- c(20,40)
+
+#var_inter %>% 
+#  dplyr::group_by(iter) %>% 
+#  dplyr::summarise(
+#    interpolation = list(fit_h_spline(
+#      dtm,
+#      dcf,
+#      missing_cfs
+#    )),
+#    .groups = "keep"
+#  ) %>% 
+#  tidyr::unnest_wider(interpolation) %>% 
+#  tidyr::pivot_longer(-iter) %>% 
+#  dplyr::rename(dcf = value, dtm = name) %>% 
+#  View()
+
+interpolate_boot_var <- function(boot_df, portfolio_cf){
+  
+  boot_df %>% 
+      dplyr::group_by(iter) %>% 
+      dplyr::summarise(
+        interpolation = list(fit_h_spline(
+          dtm,
+          dcf,
+          portfolio_cf$dtm
+        )),
+        .groups = "keep"
+      ) %>% 
+    tidyr::unnest_wider(interpolation) %>% 
+    tidyr::pivot_longer(-iter) %>% 
+    dplyr::mutate(name = as.numeric(name)) %>% 
+    dplyr::rename(dcf = value, dtm = name) %>% 
+    dplyr::left_join(portfolio_cf, by = "dtm") %>% 
+    dplyr::mutate(pv = dcf * cf) %>% 
+    dplyr::group_by(iter) %>% 
+    dplyr::summarise(pv = sum(pv)) %>% 
+    return()
   
 }
 
