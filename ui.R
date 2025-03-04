@@ -18,14 +18,46 @@ ui <- bslib::page_navbar(
     theme = bs_theme(bootswatch = "flatly"),
 
     nav_panel(
-        title = "Tab 1",
+        title = "About",
         fluidPage(
-            h2("Welcome"),
-            p("Insert content here for tab 1.")
-        )
-    ),
+          div(style = "position: relative;",
+              h2(tags$u("Welcome to Fixed Income Portfolio Management")),
+              p("This dashboard is designed to help investors and portfolio managers analyze portfolio performance, assess risk, and optimize investment strategies."),
+              
+              h3("Features"),
+              div(style = "overflow: hidden;",
+                  tags$ul(
+                    tags$li("[Insert Features]")
+                  ),
+                  
+                  tags$img(
+                    src = "bull2.jpg", 
+                    width = "100%", 
+                    style = "position: absolute; top: 100px; right: 0; max-width: 950px;"
+                  )
+              )
+          ),
+          
+          div(style = "margin-top;"),
+          
+          h3("How it Works"),
+          p("[insert instructions]"),
+          
+          h3("Methodology"),
+          p("[insert methodology]"),
+          
+          h2("Thank you, and best of luck!"),
+          
+          div(style = "position: absolute; bottom: 0; width: 100%; text-align: center; padding: 10px;",
+              HTML(
+                '<a href="https://www.linkedin.com/in/powleyjustin/" target="_blank" text-decoration: none;">Justin Powley</a>
+                |
+                <a href="https://www.linkedin.com/in/travis-nowak-072010147/" target="_blank" text-decoration: none;">Travis Nowak</a>')
+          ),
+            )
+        ),
 
-    nav_panel(title = "Tab 2",
+    nav_panel(title = "Dashboard",
     bslib::layout_sidebar(
         sidebar = sidebar(
             
