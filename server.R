@@ -19,6 +19,7 @@ server <- function(input, output, session) {
     max_date <- max(treasury_data_server$date)
     min_date <- min(treasury_data_server$date)
     maturities_included <- ncol(treasury_data_server) - 1
+    
     # print(head(treasury_data_server))
     # print(str(treasury_data_server))
     
@@ -38,10 +39,14 @@ server <- function(input, output, session) {
     
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
     app_state <- shiny::reactiveValues()
+    
     # Data and Model Updates
     
     pc_deltas_sd <- NULL
+    app_state$bonds <- list()
     app_state$init <- NULL
+    
+    
     
     output$stressed_curve_scalar_value <- renderUI({
       value_box(title = "Test Case:",
@@ -199,12 +204,26 @@ server <- function(input, output, session) {
     num_bonds <- reactiveVal(1) #start with one
     
     observeEvent(input$addBond, {
+      for (i in num_bonds()) {
+        app_state$bonds[[paste0("face_value_", i)]] <- input[[paste0("face_value_", i)]]
+        app_state$bonds[[paste0("coupon_rate_", i)]] <- input[[paste0("coupon_rate_", i)]]
+        app_state$bonds[[paste0("maturity_date_", i)]] <- input[[paste0("maturity_date_", i)]]
+      }
       num_bonds(num_bonds() + 1)
     })
     
     observeEvent(input$subBond, {
-      num_bonds(max(num_bonds() - 1, 1))
+      if (num_bonds() > 1) {
+        for (i in 1:num_bonds()) {
+          app_state$bonds[[paste0("face_value_", i)]] <- input[[paste0("face_value_", i)]]
+          app_state$bonds[[paste0("coupon_rate_", i)]] <- input[[paste0("coupon_rate_", i)]]
+          app_state$bonds[[paste0("maturity_date_", i)]] <- input[[paste0("maturity_date_", i)]]
+        }
+        num_bonds(max((num_bonds() - 1), 0))
+      }
     })
+    
+    
     
     
     # Change UI as we add bonds
@@ -213,12 +232,25 @@ server <- function(input, output, session) {
       lapply(1:num_bonds(), function(i) {
         card(
           card_header(paste0("Bond ", i)),
-          fluidRow(
-            column(4, numericInput(paste0("face_value_", i), "Face Value", value = NA)),
-            column(4, numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = NA)),
-            column(4, dateInput(paste0("maturity_date_", i), "Maturity Date", value = Sys.Date() + 365))
+            fluidRow(
+              column(4, numericInput(
+                inputId = paste0("face_value_", i),
+                label = "Face Value",
+                value = ifelse(!is.null(app_state$bonds[[paste0("face_value_", i)]]),
+                               app_state$bonds[[paste0("face_value_", i)]],
+                               NA)
+              )),
+            column(4, 
+                   numericInput(paste0("coupon_rate_", i), "Coupon Rate", value = ifelse(!is.null(app_state$bonds[[paste0("coupon_rate_", i)]]),
+                                                                                         app_state$bonds[[paste0("coupon_rate_", i)]],
+                                                                                         NA)
+                                )),
+            column(4, dateInput(paste0("maturity_date_", i), "Maturity Date", value = ifelse(!is.null(app_state$bonds[[paste0("maturity_date_", i)]]),
+                                                                                             app_state$bonds[[paste0("maturity_date_", i)]],
+                                                                                             Sys.Date() + 365)
+                                ))
+            )
           )
-        )
       })
     })
     

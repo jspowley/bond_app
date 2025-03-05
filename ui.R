@@ -33,7 +33,7 @@ ui <- bslib::page_navbar(
                   tags$img(
                     src = "bull2.jpg", 
                     width = "100%", 
-                    style = "position: absolute; top: 100px; right: 0; max-width: 950px;"
+                    style = "position: absolute; top: 100px; right: 0; max-width: 900px;"
                   )
               )
           ),
