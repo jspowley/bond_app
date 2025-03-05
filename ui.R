@@ -27,7 +27,11 @@ ui <- bslib::page_navbar(
               h3("Features"),
               div(style = "overflow: hidden;",
                   tags$ul(
-                    tags$li("[Insert Features]")
+                    tags$li("Historical Yield Curves"),
+                    tags$li("Scenario Analysis & Monotonicty Indicator"),
+                    tags$li("Scenario Analysis including monotonocity indicator"),
+                    tags$li("Bond inputs for your portfolio"),
+                    tags$li("VaR simulation based on current/hypothetical portfolio")
                   ),
                   
                   tags$img(
@@ -38,15 +42,24 @@ ui <- bslib::page_navbar(
               )
           ),
           
-          div(style = "margin-top;"),
           
-          h3("How it Works"),
-          p("[insert instructions]"),
+
+          h4("Historical Yield Curves"),
+          p("Within the 'yield' panel, select the date of choice and the visual will update to that day's yield curve"),
           
-          h3("Methodology"),
-          p("[insert methodology]"),
+          h4("Scenario Analysis & Monotonicty Indicator"),
+          p("Adjust the training window to a period of time that you expect to be the most similar to your trading narrative"),
+          p(tags$span(style = "font-size: 13px; margin-left: 20px;", "i.e.) ~2008 if you expect a similar market")),
+          p("Adjust risk time frame to the number of days forward that you expect your inputs to apply for"),
+          p("Adjust the level, steepening, and curvature factors as needed. Changes are reflected in the plotted chart"),
+          p(tags$span(style = "font-size: 13px; margin-left: 20px;", "Level: Adjusts yield curve up/down")),
+          p(tags$span(style = "font-size: 13px; margin-left: 20px;", "Steepening: moves short-term rates up/down relative to long-term rates")),
+          p(tags$span(style = "font-size: 13px; margin-left: 20px;", "Curvature: moves mid-term rates up/down relative  to short and long-term rates")),
+          p("Monotonicity is stated for the stressed curve; trading strategies can be created based upon this observation"),
           
-          h2("Thank you, and best of luck!"),
+          h4("Portfolio Planning & Value at Risk (VaR)"),
+          p("Insert your current or a hypothetical portfolio using the bonds section, then hit 'Run Value at Risk' and wait for the simulation to compute"),
+
           
           div(style = "position: absolute; bottom: 0; width: 100%; text-align: center; padding: 10px;",
               HTML(
@@ -54,8 +67,26 @@ ui <- bslib::page_navbar(
                 |
                 <a href="https://www.linkedin.com/in/travis-nowak-072010147/" target="_blank" text-decoration: none;">Travis Nowak</a>')
           ),
-            )
+          )
         ),
+    
+    nav_panel(
+      title = "Methodology",
+      fluidPage(
+        div(style = "overflow: hidden;",
+            h2(tags$u("Under the Hood")),
+            p("[subtext goes here]"),
+            
+            tags$img(
+              src = "bull2.jpg", 
+              width = "100%", 
+              style = "position: absolute; top: 100px; right: 0; max-width: 900px;"
+            )
+        )
+      ),
+      
+      
+    ),
 
     nav_panel(title = "Dashboard",
     bslib::layout_sidebar(
