@@ -327,10 +327,6 @@ server <- function(input, output, session) {
           value_box(title = "Percent Change:",
                     value = paste0(round(
                       100*(sum(stressed_pv$pv) - sum(current_pv$pv))/sum(current_pv$pv), 2), "%"))})
-          
-        output$multi_plot <- 
-          
-          renderPlot({
             
           df <- dplyr::left_join(
           current_pv %>% dplyr::transmute(date, dtm, cf, pv_1 = pv),
@@ -339,23 +335,56 @@ server <- function(input, output, session) {
         ) %>% 
           dplyr::mutate(d_pv = (pv_2 - pv_1)/pv_1) %>% 
           dplyr::mutate(weight = (pv_2 - pv_1)/sum(pv_1)) %>% 
-          dplyr::select(date, cf, pv_1, d_pv, weight) %>% 
-          tidyr::pivot_longer(-date) %>% 
-          dplyr::mutate(name = dplyr::case_when(
-            name == "cf" ~ "Cash Flow",
-            name == "pv_1" ~ "Present Value",
-            name == "d_pv" ~ "Percent Change in PV",
-            name == "weight" ~ "Relative Weighting"
-          ),
-          name = factor(name, levels = c("Cash Flow", "Present Value", "Percent Change in PV", "Relative Weighting"))) 
+          dplyr::select(date, cf, pv_1, d_pv, weight)
           
           
           min_date_ggplot <- min(df$date)
-          max_date_ggplot <- max(df$dae)
+          max_date_ggplot <- max(df$date)
           
+          ggplot_x_range <- as.numeric(max_date_ggplot - min_date_ggplot)
+          gg_steps <- 50
+          width_val <-  ceiling((ggplot_x_range / gg_steps)/2)*2-1
+          
+          adj_term <- (width_val - as.numeric(max_date_ggplot - min_date_ggplot) %% width_val)
+          
+          # adj_term
+          
+          df <- seq(from = min_date_ggplot, 
+              to = max_date_ggplot + adj_term, 
+              by = "day") %>% 
+            data.frame(date = .) %>% 
+            dplyr::full_join(df, by = "date") %>% 
+            dplyr::mutate(temp = as.numeric(date - min(date)) %% width_val,
+                          change = ifelse(temp == 0, 1, 0),
+                          group_var = cumsum(change)) %>% 
+            dplyr::group_by(group_var) %>% 
+            dplyr::mutate(date = median(date)) %>% 
+            tidyr::drop_na() %>% 
+            dplyr::summarise(cf = sum(cf),
+                             pv_1 = sum(pv_1),
+                             d_pv = sum(d_pv),
+                             weight = sum(weight),
+                             .groups = "keep",
+                             date = first(date)) %>% 
+            dplyr::ungroup() %>% 
+            dplyr::select(-group_var)
+          
+          print(df)
+          
+      output$multi_plot <- 
+            
+        renderPlot({
           df %>% 
+            tidyr::pivot_longer(-date) %>% 
+            dplyr::mutate(name = dplyr::case_when(
+              name == "cf" ~ "Cash Flow",
+              name == "pv_1" ~ "Present Value",
+              name == "d_pv" ~ "Percent Change in PV",
+              name == "weight" ~ "Relative Weighting"
+            ),
+            name = factor(name, levels = c("Cash Flow", "Present Value", "Percent Change in PV", "Relative Weighting"))) %>% 
           ggplot() +
-          geom_col(aes(x = date, y = value), width = (as.numeric(max_date_ggplot) - as.numeric(min_date_ggplot)) / ) +
+          geom_col(aes(x = date, y = value), width = width_val*0.90*(Sys.Date() - Sys.Date()+1)) +
           facet_grid(name~., scales = "free_y") +
           labs(x = "Date", y = "Value")
             
@@ -370,6 +399,11 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$run_var, {
+      
+      # Checks to ensure valid inputs exist
+    reference_df <-  bond_data() %>% tidyr::drop_na()
+    
+    if(nrow(!reference_df < nrow(bond_data()))){
       
     y_in <- app_state$current_yield
     r_in <- app_state$rot_matrix
@@ -389,7 +423,9 @@ server <- function(input, output, session) {
       labs(x = "PV Simulated", y = "Density")
       })
     
-    output$var5 <- renderText(paste0("$ ",var_set$pv %>% quantile(probs = 0.05)))
+    output$var5 <- renderText(paste0("$ ",round(var_set$pv %>% quantile(probs = 0.05), 2)))
+    
+    }
     
     })
     

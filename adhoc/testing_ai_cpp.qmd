@@ -4,3 +4,33 @@ format: html
 editor: visual
 ---
 
+```{r}
+library(tidyverse)
+library(plotly)
+
+sample <- data.frame(x = c(Sys.Date(), Sys.Date() + 1), y = c(1,2))
+
+p1 <- sample %>% 
+  ggplot() + geom_col(aes(x = x, y = y), width = 0.5)
+
+p1
+
+ggplotly(p1)
+
+width <- 5
+
+adj_term <- (width - (as.numeric(Sys.Date() + 995 - Sys.Date()) %% width))
+
+adj_term
+
+seq(from = Sys.Date(), to = Sys.Date() + adj_term + 1000, by = "day") %>% 
+  data.frame(date = .) %>% 
+  dplyr::mutate(temp = as.numeric(date - min(date)) %% width,
+                change = ifelse(temp == 0, 1, 0),
+                group_var = cumsum(change),
+                cf = 1) %>% 
+  dplyr::group_by(group_var) %>% 
+  dplyr::summarise(cf = sum(cf), .groups = "keep",
+                   med = median(date))
+  
+```
