@@ -219,7 +219,7 @@ server <- function(input, output, session) {
           app_state$bonds[[paste0("coupon_rate_", i)]] <- input[[paste0("coupon_rate_", i)]]
           app_state$bonds[[paste0("maturity_date_", i)]] <- input[[paste0("maturity_date_", i)]]
         }
-        num_bonds(max((num_bonds() - 1), 0))
+        num_bonds(max((num_bonds() - 1), 1))
       }
     })
     
