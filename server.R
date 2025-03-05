@@ -332,7 +332,7 @@ server <- function(input, output, session) {
           
           renderPlot({
             
-          dplyr::left_join(
+          df <- dplyr::left_join(
           current_pv %>% dplyr::transmute(date, dtm, cf, pv_1 = pv),
           stressed_pv %>% dplyr::transmute(dtm, pv_2 = pv),
           by = "dtm"
@@ -347,9 +347,15 @@ server <- function(input, output, session) {
             name == "d_pv" ~ "Percent Change in PV",
             name == "weight" ~ "Relative Weighting"
           ),
-          name = factor(name, levels = c("Cash Flow", "Present Value", "Percent Change in PV", "Relative Weighting"))) %>% 
+          name = factor(name, levels = c("Cash Flow", "Present Value", "Percent Change in PV", "Relative Weighting"))) 
+          
+          
+          min_date_ggplot <- min(df$date)
+          max_date_ggplot <- max(df$dae)
+          
+          df %>% 
           ggplot() +
-          geom_col(aes(x = date, y = value), width = 30) +
+          geom_col(aes(x = date, y = value), width = (as.numeric(max_date_ggplot) - as.numeric(min_date_ggplot)) / ) +
           facet_grid(name~., scales = "free_y") +
           labs(x = "Date", y = "Value")
             
