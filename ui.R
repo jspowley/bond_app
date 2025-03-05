@@ -94,6 +94,8 @@ ui <- bslib::page_navbar(
             
             card(card_header("Model"),
                  uiOutput("training_window_dates"),
+                 
+                 # Max needs to be capped
                  shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", min = 1, max = 3650, value = 1)),
             
             card(card_header("Yield"),
