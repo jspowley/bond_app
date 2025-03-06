@@ -35,8 +35,8 @@ ui <- bslib::page_navbar(
               
               tags$img(
                 src = "bull2.jpg", 
-                width = "100%", 
-                style = "position: absolute; top: 100px; right: 0; max-width: 900px;"
+                width = "80%", 
+                style = "position: absolute; top: 100px; right: 0; max-width: 800px;"
               )
           )
       ),
@@ -79,7 +79,7 @@ ui <- bslib::page_navbar(
           tags$img(
             src = "hood.png", 
             width = "75%", 
-            style = "position: absolute; top: 100px; right: 400px; max-width: 500px;"
+            style = "position: absolute; top: 100px; right: 400px; max-width: 300px;"
           )
       ),
       
@@ -131,7 +131,9 @@ ui <- bslib::page_navbar(
                      uiOutput("training_window_dates"),
                      
                      # Max needs to be capped
-                     shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", min = 1, max = 3650, value = 1)),
+                     shiny::uiOutput("delta_lag_ui"),
+                     shiny::textOutput("warn_lag")),
+                     # shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", min = 1, max = 3650, value = 1)),
                 
                 card(card_header("Yield"),
                      dateInput("selected_yield", "Select Yield Curve Date:", min = as.Date(ui_date_min), max = as.Date(ui_date_max), value = ui_date_max),

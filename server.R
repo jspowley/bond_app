@@ -20,6 +20,10 @@ server <- function(input, output, session) {
     min_date <- min(treasury_data_server$date)
     maturities_included <- ncol(treasury_data_server) - 1
     
+    output$delta_lag_ui <- renderUI({
+      shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", value = 1, min = 1, max = 1000)
+    })
+    
     # print(head(treasury_data_server))
     # print(str(treasury_data_server))
     
@@ -35,6 +39,17 @@ server <- function(input, output, session) {
     
     observeEvent(input$max_date, {
         updateDateInput(session, "selected_yield", value = as.Date(max_date))
+    })
+    
+    observeEvent(input$training_range,{
+      
+      min_window <- min(input$training_range)
+      max_window <- min(input$training_range)
+      max_delta <- as.numeric(max_window - min_window)-50
+      
+      output$delta_lag_ui <- renderUI({
+        shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", value = 1, min = 1, max = max(1,max_delta))
+      })
     })
     
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
@@ -69,6 +84,10 @@ server <- function(input, output, session) {
         
         # print(input$training_range)
         
+        if(input$delta_lag < as.numeric(max(input$training_range) - min(input$training_range))){
+          
+          output$warn_lag <- renderText("")
+        
         pca_data <<- treasury_data_server %>% 
             filter(date >= min(input$training_range) & date <= max(input$training_range)) %>% 
             select(-date)
@@ -102,6 +121,9 @@ server <- function(input, output, session) {
             app_state$init <- app_state$init + 1
         }
         
+        }else{
+          output$warn_lag <- renderText("Lag exceeds length of training window. Please shorten lag or lengthen window!")
+        }
         # print("Done modelling")
     })
     
