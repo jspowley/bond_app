@@ -9,7 +9,7 @@
 
 library(shiny)
 library(shinydashboard)
-
+library(shinyalert)
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -341,6 +341,8 @@ server <- function(input, output, session) {
           value_box(title = "Test Case:",
                     value = paste0("$ ",round(sum(stressed_pv$pv), 2)))})
         
+        app_state$current_pv_var_ref <- sum(current_pv$pv)
+        
         output$current_curve_scalar_value <- renderUI({
           value_box(title = "Current Value:",
                     value = paste0("$ ",round(sum(current_pv$pv), 2)))})
@@ -422,6 +424,8 @@ server <- function(input, output, session) {
     
     observeEvent(input$run_var, {
       
+    shinyalert(title = "Loading Value at Risk", text = "VAR is running! Please avoid spamming additional inputs, as they will queue and execute once VAR is complete. Processing most sample sizes takes around 30 seconds.")
+      
       # Checks to ensure valid inputs exist
     reference_df <-  bond_data() %>% tidyr::drop_na()
     
@@ -445,7 +449,17 @@ server <- function(input, output, session) {
       labs(x = "PV Simulated", y = "Density")
       })
     
-    output$var5 <- renderText(paste0("$ ",round(var_set$pv %>% quantile(probs = 0.05), 2)))
+    var_price <- var_set$pv %>% quantile(probs = 0.05)
+    
+    output$var5 <- renderUI({
+      value_box(title = "VaR at 5% | Price:",
+                value = paste0("$ ",round(var_price, 2)))})
+    
+    var_pct_risk <- (var_price - app_state$current_pv_var_ref)/app_state$current_pv_var_ref
+    
+    output$var5pct <- renderUI({
+      value_box(title = "VaR at 5% | % Change:",
+                value = paste0(round(var_pct_risk * 100, 2), " %"))})
     
     }
     
