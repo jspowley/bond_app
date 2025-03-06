@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     git
 
-RUN R -e "install.packages(c('devtools', 'shiny', 'bslib', 'tidyverse', 'eiatools', 'DT', 'rlang', 'rhandsontable', 'plotly', 'shinyalert', 'lubridate', 'tidyquant', 'facmodCS', 'moments', 'Rcpp', 'shinydashboard'), dependencies = TRUE, repos = 'https://packagemanager.rstudio.com/cran/latest')"
+RUN R -e "install.packages(c('devtools', 'shiny', 'bslib', 'tidyverse', 'eiatools', 'DT', 'rlang', 'rhandsontable', 'plotly', 'shinyalert', 'lubridate', 'tidyquant', 'facmodCS', 'moments', 'Rcpp', 'shinydashboard', 'profvis'), dependencies = TRUE, repos = 'https://packagemanager.rstudio.com/cran/latest')"
 # RUN R -e "devtools::install_github('https://github.com/jspowley/eiatools')"
 
 RUN git clone https://github.com/jspowley/bond_app.git /srv/shiny-server/bond_app
