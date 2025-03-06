@@ -11,7 +11,7 @@ library(shiny)
 library(shinydashboard)
 
 
-# Define server logic required to draw a histogram
+# Define server logic required to draw a histograms
 server <- function(input, output, session) {
 
 # Input Rendering
