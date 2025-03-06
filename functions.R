@@ -232,7 +232,7 @@ interpolate_and_price <- function(boot_df_in, cf_data_in){
     return()
 }
 
-cf_data <- readRDS("cf_schedule.rds") %>% dplyr::mutate(dtm = as.numeric(date - Sys.Date()))
-boot_df <- readRDS("dcf_start.rds")
+#cf_data <- readRDS("cf_schedule.rds") %>% dplyr::mutate(dtm = as.numeric(date - Sys.Date()))
+#boot_df <- readRDS("dcf_start.rds")
 
-interpolate_and_price(boot_df, cf_data)
+#interpolate_and_price(boot_df, cf_data)
