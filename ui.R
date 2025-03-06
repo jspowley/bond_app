@@ -74,12 +74,6 @@ ui <- bslib::page_navbar(
           h2(tags$u("Under the Hood")),
           p("For the purpose of deeper understanding;"),
           p("This section details the data sources, modeling techniques, and calculations used for driving the outputs."),
-          
-          tags$img(
-            src = "hood.png", 
-            width = "75%", 
-            style = "position: absolute; top: 100px; right: 400px; max-width: 300px;"
-          )
       ),
       
       bslib::accordion(
