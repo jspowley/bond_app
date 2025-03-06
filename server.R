@@ -9,7 +9,7 @@
 
 library(shiny)
 library(shinydashboard)
-
+library(shinyalert)
 
 # Define server logic required to draw a histograms
 server <- function(input, output, session) {
@@ -19,6 +19,10 @@ server <- function(input, output, session) {
     max_date <- max(treasury_data_server$date)
     min_date <- min(treasury_data_server$date)
     maturities_included <- ncol(treasury_data_server) - 1
+    
+    output$delta_lag_ui <- renderUI({
+      shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", value = 1, min = 1, max = 1000)
+    })
     
     # print(head(treasury_data_server))
     # print(str(treasury_data_server))
@@ -35,6 +39,17 @@ server <- function(input, output, session) {
     
     observeEvent(input$max_date, {
         updateDateInput(session, "selected_yield", value = as.Date(max_date))
+    })
+    
+    observeEvent(input$training_range,{
+      
+      min_window <- min(input$training_range)
+      max_window <- min(input$training_range)
+      max_delta <- as.numeric(max_window - min_window)-50
+      
+      output$delta_lag_ui <- renderUI({
+        shiny::numericInput("delta_lag", "Risk Time Frame (Trading Days)", value = 1, min = 1, max = max(1,max_delta))
+      })
     })
     
     maturities <- colnames(treasury_data_server %>% dplyr::select(-date)) %>% as.numeric()
@@ -69,6 +84,10 @@ server <- function(input, output, session) {
         
         # print(input$training_range)
         
+        if(input$delta_lag < as.numeric(max(input$training_range) - min(input$training_range))){
+          
+          output$warn_lag <- renderText("")
+        
         pca_data <<- treasury_data_server %>% 
             filter(date >= min(input$training_range) & date <= max(input$training_range)) %>% 
             select(-date)
@@ -102,6 +121,9 @@ server <- function(input, output, session) {
             app_state$init <- app_state$init + 1
         }
         
+        }else{
+          output$warn_lag <- renderText("Lag exceeds length of training window. Please shorten lag or lengthen window!")
+        }
         # print("Done modelling")
     })
     
@@ -319,6 +341,8 @@ server <- function(input, output, session) {
           value_box(title = "Test Case:",
                     value = paste0("$ ",round(sum(stressed_pv$pv), 2)))})
         
+        app_state$current_pv_var_ref <- sum(current_pv$pv)
+        
         output$current_curve_scalar_value <- renderUI({
           value_box(title = "Current Value:",
                     value = paste0("$ ",round(sum(current_pv$pv), 2)))})
@@ -400,6 +424,8 @@ server <- function(input, output, session) {
     
     observeEvent(input$run_var, {
       
+    shinyalert(title = "Loading Value at Risk", text = "VAR is running! Please avoid spamming additional inputs, as they will queue and execute once VAR is complete. Processing most sample sizes takes around 30 seconds.")
+      
       # Checks to ensure valid inputs exist
     reference_df <-  bond_data() %>% tidyr::drop_na()
     
@@ -423,7 +449,17 @@ server <- function(input, output, session) {
       labs(x = "PV Simulated", y = "Density")
       })
     
-    output$var5 <- renderText(paste0("$ ",round(var_set$pv %>% quantile(probs = 0.05), 2)))
+    var_price <- var_set$pv %>% quantile(probs = 0.05)
+    
+    output$var5 <- renderUI({
+      value_box(title = "VaR at 5% | Price:",
+                value = paste0("$ ",round(var_price, 2)))})
+    
+    var_pct_risk <- (var_price - app_state$current_pv_var_ref)/app_state$current_pv_var_ref
+    
+    output$var5pct <- renderUI({
+      value_box(title = "VaR at 5% | % Change:",
+                value = paste0(round(var_pct_risk * 100, 2), " %"))})
     
     }
     
