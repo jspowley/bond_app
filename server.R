@@ -186,11 +186,11 @@ server <- function(input, output, session) {
         
         
         
-        output$boot_dt <- renderDT({
-            boot_df
-        })
+        #output$boot_dt <- renderDT({
+        #    boot_df
+        #})
         
-        mono <- boot_df %>% dplyr::mutate(x = 1, x = cumsum(x)) %>% 
+        mono <- boot_df_stressed %>% dplyr::mutate(x = 1, x = cumsum(x)) %>% 
             dplyr::arrange(desc(dcf)) %>% 
             dplyr::mutate(x = x - dplyr::lag(x)) %>% 
             dplyr::filter(x != 1) %>% 
@@ -342,7 +342,7 @@ server <- function(input, output, session) {
           max_date_ggplot <- max(df$date)
           
           ggplot_x_range <- as.numeric(max_date_ggplot - min_date_ggplot)
-          gg_steps <- 50
+          gg_steps <- 100
           width_val <-  ceiling((ggplot_x_range / gg_steps)/2)*2-1
           
           adj_term <- (width_val - as.numeric(max_date_ggplot - min_date_ggplot) %% width_val)
